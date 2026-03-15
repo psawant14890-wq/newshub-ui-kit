@@ -120,19 +120,7 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
         ) : (
           <ImagePlaceholder />
         )}
-        {onSave && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSave(article.id); }}
-            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-200 ${
-              isSaved
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-background/60 text-foreground opacity-0 group-hover:opacity-100'
-            }`}
-            aria-label={isSaved ? 'Remove bookmark' : 'Bookmark article'}
-          >
-            <Bookmark className="h-4 w-4" fill={isSaved ? 'currentColor' : 'none'} />
-          </button>
-        )}
+        <CardBookmarkButton article={article} />
       </div>
       <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
