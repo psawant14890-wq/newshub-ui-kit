@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Search, X, Sun, Moon, User, LogOut, Newspaper } from 'lucide-react';
+import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SearchBar } from './SearchBar';
+import toast from 'react-hot-toast';
 import type { Category } from '../types';
 
 interface NavbarProps {
@@ -10,23 +11,18 @@ interface NavbarProps {
   currentCategory?: string;
 }
 
-const categoryColors: Record<string, string> = {
-  politics: 'text-category-politics',
-  tech: 'text-category-tech',
-  sports: 'text-category-sports',
-  world: 'text-category-world',
-  entertainment: 'text-category-entertainment',
-  business: 'text-primary',
-};
-
 export function Navbar({ categories, currentCategory }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || '';
+  const userAvatar = user?.user_metadata?.avatar_url;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -40,14 +36,28 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
         setUserMenuOpen(false);
       }
     };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
     window.dispatchEvent(new Event('popstate'));
     setMobileMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUserMenuOpen(false);
+    toast.success('Signed out successfully.');
+    navigate('/');
   };
 
   return (
@@ -84,14 +94,9 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
-              {/* Search */}
               {searchOpen ? (
                 <div className="hidden md:block animate-fade-in">
-                  <SearchBar
-                    autoFocus
-                    onClose={() => setSearchOpen(false)}
-                    placeholder="Search articles..."
-                  />
+                  <SearchBar autoFocus onClose={() => setSearchOpen(false)} placeholder="Search articles..." />
                 </div>
               ) : (
                 <button
@@ -103,7 +108,6 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                 </button>
               )}
 
-              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
@@ -119,12 +123,12 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-all duration-200"
                   >
-                    {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                    {userAvatar ? (
+                      <img src={userAvatar} alt={userName} className="h-8 w-8 rounded-full object-cover" />
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                         <span className="text-sm font-medium text-primary-foreground">
-                          {user.name.charAt(0).toUpperCase()}
+                          {userName.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
@@ -132,17 +136,30 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg animate-scale-in">
                       <div className="p-3 border-b border-border">
-                        <p className="text-sm font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="text-sm font-medium text-foreground">{userName}</p>
+                        <p className="text-xs text-muted-foreground">{userEmail}</p>
                       </div>
                       <button
                         onClick={() => { navigate('/profile'); setUserMenuOpen(false); }}
                         className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
                       >
-                        <User className="h-4 w-4" /> Profile
+                        <User className="h-4 w-4" /> My Profile
                       </button>
                       <button
-                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                        onClick={() => { navigate('/profile?tab=saved'); setUserMenuOpen(false); }}
+                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                      >
+                        <Bookmark className="h-4 w-4" /> Saved Articles
+                      </button>
+                      <button
+                        onClick={() => { navigate('/profile?tab=settings'); setUserMenuOpen(false); }}
+                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                      >
+                        <Settings className="h-4 w-4" /> Settings
+                      </button>
+                      <div className="border-t border-border" />
+                      <button
+                        onClick={handleSignOut}
                         className="w-full px-3 py-2 text-sm text-destructive hover:bg-accent flex items-center gap-2 transition-colors duration-200 rounded-b-lg"
                       >
                         <LogOut className="h-4 w-4" /> Sign Out
@@ -159,7 +176,6 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                 </button>
               )}
 
-              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
@@ -224,7 +240,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                     My Profile
                   </button>
                   <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
                     className="w-full px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200"
                   >
                     Sign Out
