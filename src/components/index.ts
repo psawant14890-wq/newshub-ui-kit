@@ -16,3 +16,4 @@ export { EmptyState } from './EmptyState';
 export { BreakingNewsTicker } from './BreakingNewsTicker';
 export { CategorySection } from './CategorySection';
 export { Newsletter } from './Newsletter';
+export { ProtectedRoute } from './ProtectedRoute';

@@ -3,10 +3,13 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/Toast';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 import { HomePage } from './pages/HomePage';
 import { ArticlePage } from './pages/ArticlePage';
 import { CategoryPage } from './pages/CategoryPage';
 import { AuthPage } from './pages/AuthPage';
+import { AuthCallback } from './pages/AuthCallback';
 import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -40,8 +43,9 @@ function AppContent() {
   if (route.startsWith('/article/')) return <ArticlePage slug={route.replace('/article/', '')} />;
   if (route.startsWith('/category/')) return <CategoryPage slug={route.replace('/category/', '')} />;
   if (route === '/auth') return <AuthPage />;
+  if (route === '/auth/callback') return <AuthCallback />;
   if (route === '/search') return <SearchPage query={searchQuery} />;
-  if (route === '/profile') return <ProfilePage />;
+  if (route === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
   if (route === '/about') return <AboutPage />;
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;
@@ -56,6 +60,16 @@ function App() {
         <ToastProvider>
           <AppContent />
           <ToastContainer />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                borderRadius: '8px',
+                fontSize: '14px',
+              },
+            }}
+          />
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>

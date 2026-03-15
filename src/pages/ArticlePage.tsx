@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon, Bookmark } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, Sidebar, ShareButtons, CommentCard, CategoryBadge, AuthorMeta, LoadingSpinner } from '../components';
 import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { useBookmark } from '../hooks/useBookmark';
+import { supabase } from '../lib/supabase';
 import type { Article, Category, Tag, Comment } from '../types';
 
 interface ArticlePageProps {
@@ -15,11 +18,25 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadData();
     window.scrollTo(0, 0);
   }, [slug]);
+
+  // Track reading history
+  useEffect(() => {
+    if (user && article) {
+      supabase.from('reading_history').upsert({
+        user_id: user.id,
+        article_slug: article.slug,
+        article_title: article.title,
+        article_thumbnail: article.featured_image_url,
+        read_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,article_slug' }).then(() => {});
+    }
+  }, [user, article?.slug]);
 
   const loadData = async () => {
     setLoading(true);
@@ -102,7 +119,10 @@ export function ArticlePage({ slug }: ArticlePageProps) {
                   readTime={readTime}
                   size="md"
                 />
-                <ShareButtons title={article.title} url={`/article/${article.slug}`} />
+                <div className="flex items-center gap-2">
+                  <ArticleBookmarkButton article={article} />
+                  <ShareButtons title={article.title} url={`/article/${article.slug}`} />
+                </div>
               </div>
             </header>
 
@@ -163,5 +183,27 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
       <Footer />
     </div>
+  );
+}
+
+function ArticleBookmarkButton({ article }: { article: Article }) {
+  const { isSaved, toggleSave, loading } = useBookmark(
+    article.slug,
+    article.title,
+    article.featured_image_url,
+    article.category?.name
+  );
+
+  return (
+    <button
+      onClick={toggleSave}
+      disabled={loading}
+      className={`p-2 rounded-lg transition-all duration-200 ${
+        isSaved ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+      }`}
+      title={isSaved ? 'Remove bookmark' : 'Save article'}
+    >
+      <Bookmark className="h-5 w-5" fill={isSaved ? 'currentColor' : 'none'} />
+    </button>
   );
 }
