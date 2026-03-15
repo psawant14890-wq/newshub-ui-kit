@@ -2,6 +2,7 @@ import { Bookmark, Newspaper } from 'lucide-react';
 import { useState } from 'react';
 import { CategoryBadge } from './CategoryBadge';
 import { AuthorMeta } from './AuthorMeta';
+import { useBookmark } from '../hooks/useBookmark';
 import type { Article } from '../types';
 
 interface ArticleCardProps {
