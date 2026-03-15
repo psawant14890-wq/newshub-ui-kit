@@ -150,3 +150,28 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
     </div>
   );
 }
+
+function CardBookmarkButton({ article }: { article: Article }) {
+  const { isSaved, toggleSave, loading } = useBookmark(
+    article.slug,
+    article.title,
+    article.featured_image_url,
+    article.category?.name
+  );
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); toggleSave(); }}
+      disabled={loading}
+      className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-200 ${
+        isSaved
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-background/60 text-foreground opacity-0 group-hover:opacity-100'
+      }`}
+      aria-label={isSaved ? 'Remove bookmark' : 'Bookmark article'}
+      title={isSaved ? 'Remove bookmark' : 'Save article'}
+    >
+      <Bookmark className="h-4 w-4" fill={isSaved ? 'currentColor' : 'none'} />
+    </button>
+  );
+}
