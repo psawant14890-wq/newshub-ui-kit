@@ -104,6 +104,7 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
   }
 
   // Default variant
+  // Default variant - remove onSave/isSaved from props since we use hook now
   return (
     <div
       onClick={handleClick}
