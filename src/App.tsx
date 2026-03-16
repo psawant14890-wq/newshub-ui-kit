@@ -14,6 +14,7 @@ import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AboutPage, EditorialPolicyPage, PrivacyPage, TermsPage } from './pages/StaticPage';
+import { AdminPage } from './pages/AdminPage';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
