@@ -164,9 +164,6 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                         >
                           <Shield className="h-4 w-4" /> Admin Panel
                         </button>
-                      )}
-                        <Settings className="h-4 w-4" /> Settings
-                      </button>
                       <div className="border-t border-border" />
                       <button
                         onClick={handleSignOut}
