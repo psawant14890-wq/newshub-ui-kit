@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Clock, ArrowRight } from 'lucide-react';
-import { CategoryBadge } from './CategoryBadge';
-import { mockArticles } from '../lib/api';
+import { searchArticles } from '../lib/api';
+import type { Article } from '../types';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -11,7 +11,7 @@ interface SearchBarProps {
 
 export function SearchBar({ placeholder = 'Search...', autoFocus = false, onClose }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<typeof mockArticles>([]);
+  const [suggestions, setSuggestions] = useState<Article[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -38,22 +38,18 @@ export function SearchBar({ placeholder = 'Search...', autoFocus = false, onClos
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const searchArticles = useCallback((q: string) => {
+  const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setSuggestions([]); return; }
-    const filtered = mockArticles.filter(a =>
-      a.title.toLowerCase().includes(q.toLowerCase()) ||
-      a.excerpt.toLowerCase().includes(q.toLowerCase())
-    ).slice(0, 5);
-    setSuggestions(filtered);
+    const results = await searchArticles(q);
+    setSuggestions(results.slice(0, 5));
   }, []);
 
   const handleChange = (value: string) => {
     setQuery(value);
     setSelectedIndex(-1);
     setShowDropdown(true);
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchArticles(value), 300);
+    debounceRef.current = setTimeout(() => doSearch(value), 300);
   };
 
   const navigate = (path: string) => {
@@ -66,12 +62,9 @@ export function SearchBar({ placeholder = 'Search...', autoFocus = false, onClos
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-
-    // Save to recent
     const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem('recentSearches', JSON.stringify(updated));
-
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
@@ -125,7 +118,6 @@ export function SearchBar({ placeholder = 'Search...', autoFocus = false, onClos
         )}
       </form>
 
-      {/* Dropdown */}
       {(showRecent || showSuggestions) && (
         <div className="absolute top-full mt-2 w-full bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden animate-scale-in">
           {showRecent && (
