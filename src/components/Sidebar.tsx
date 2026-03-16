@@ -87,7 +87,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
         {/* Categories */}
         <CollapsibleSection title="Popular Categories" icon={<span className="text-sm">📁</span>}>
           <div className="flex flex-wrap gap-2">
-            {mockCategories.map(cat => (
+            {cats.map(cat => (
               <CategoryBadge key={cat.id} category={cat.name} size="md" />
             ))}
           </div>
