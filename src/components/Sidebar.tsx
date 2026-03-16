@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, Mail, Twitter, Facebook, Instagram, Youtube, Linkedin } from 'lucide-react';
 import { ArticleCard } from './ArticleCard';
 import { CategoryBadge } from './CategoryBadge';
-import { getTrendingArticles, getAllTags, mockCategories } from '../lib/api';
+import { getTrendingArticles, getAllTags, getCategories } from '../lib/api';
 import type { Article, Tag } from '../types';
 
 interface SidebarProps {
