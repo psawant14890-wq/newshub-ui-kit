@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, Mail, Twitter, Facebook, Instagram, Youtube, Linkedin } from 'lucide-react';
 import { ArticleCard } from './ArticleCard';
 import { CategoryBadge } from './CategoryBadge';
-import { getTrendingArticles, getAllTags, mockCategories } from '../lib/api';
+import { getTrendingArticles, getAllTags, getCategories } from '../lib/api';
 import type { Article, Tag } from '../types';
 
 interface SidebarProps {
@@ -38,6 +38,7 @@ function CollapsibleSection({ title, icon, defaultOpen = true, children }: {
 export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarProps) {
   const [trending, setTrending] = useState<Article[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [cats, setCats] = useState<any[]>([]);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -46,6 +47,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
       getTrendingArticles(5).then(setTrending);
     }
     getAllTags().then(setTags);
+    getCategories().then(setCats);
   }, [showTrending]);
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -85,7 +87,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
         {/* Categories */}
         <CollapsibleSection title="Popular Categories" icon={<span className="text-sm">📁</span>}>
           <div className="flex flex-wrap gap-2">
-            {mockCategories.map(cat => (
+            {cats.map(cat => (
               <CategoryBadge key={cat.id} category={cat.name} size="md" />
             ))}
           </div>

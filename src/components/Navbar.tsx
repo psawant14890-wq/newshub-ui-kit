@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper } from 'lucide-react';
+import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SearchBar } from './SearchBar';
@@ -157,6 +157,14 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Settings className="h-4 w-4" /> Settings
                       </button>
+                      {user?.user_metadata?.role === 'admin' && (
+                        <button
+                          onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
+                          className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                        >
+                          <Shield className="h-4 w-4" /> Admin Panel
+                        </button>
+                      )}
                       <div className="border-t border-border" />
                       <button
                         onClick={handleSignOut}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, X, SearchX } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, EmptyState, Pagination } from '../components';
-import { getCategories, getRecentArticles } from '../lib/api';
+import { getCategories, searchArticles, getRecentArticles } from '../lib/api';
 import type { Article, Category } from '../types';
 
 interface SearchPageProps {
@@ -11,8 +11,7 @@ interface SearchPageProps {
 export function SearchPage({ query = '' }: SearchPageProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState(query);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [results, setResults] = useState<Article[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'relevance'>('latest');
   const [loading, setLoading] = useState(true);
@@ -20,50 +19,45 @@ export function SearchPage({ query = '' }: SearchPageProps) {
   const perPage = 10;
 
   useEffect(() => {
-    loadData();
+    getCategories().then(setCategories);
+    performSearch();
   }, []);
 
   useEffect(() => {
     performSearch();
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, sortBy, articles]);
+  }, [searchQuery, selectedCategory, sortBy]);
 
-  const loadData = async () => {
+  const performSearch = async () => {
+    setLoading(true);
     try {
-      const [cats, allArticles] = await Promise.all([
-        getCategories(),
-        getRecentArticles(50)
-      ]);
-      setCategories(cats);
-      setArticles(allArticles);
+      let articles: Article[];
+      if (searchQuery.trim()) {
+        articles = await searchArticles(searchQuery);
+      } else {
+        articles = await getRecentArticles(50);
+      }
+
+      if (selectedCategory) {
+        articles = articles.filter(a => a.category?.slug === selectedCategory);
+      }
+
+      if (sortBy === 'latest') {
+        articles.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+      } else {
+        articles.sort((a, b) => b.view_count - a.view_count);
+      }
+
+      setResults(articles);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Search error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const performSearch = () => {
-    let results = articles;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      results = results.filter(a =>
-        a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)
-      );
-    }
-    if (selectedCategory) {
-      results = results.filter(a => a.category?.slug === selectedCategory);
-    }
-    if (sortBy === 'latest') {
-      results.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-    } else {
-      results.sort((a, b) => b.view_count - a.view_count);
-    }
-    setFilteredArticles(results);
-  };
-
-  const totalPages = Math.ceil(filteredArticles.length / perPage);
-  const paginatedResults = filteredArticles.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const totalPages = Math.ceil(results.length / perPage);
+  const paginatedResults = results.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
@@ -78,7 +72,6 @@ export function SearchPage({ query = '' }: SearchPageProps) {
         <div className="max-w-3xl mx-auto mb-8">
           <h1 className="font-display text-3xl font-bold text-foreground mb-6">Search</h1>
 
-          {/* Search Input */}
           <div className="relative mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
@@ -96,7 +89,6 @@ export function SearchPage({ query = '' }: SearchPageProps) {
             )}
           </div>
 
-          {/* Filters */}
           <div className="flex flex-wrap gap-3 items-center">
             <select
               value={selectedCategory}
@@ -117,13 +109,16 @@ export function SearchPage({ query = '' }: SearchPageProps) {
               <option value="relevance">Most Popular</option>
             </select>
             <span className="text-sm text-muted-foreground ml-auto">
-              {filteredArticles.length} result{filteredArticles.length !== 1 ? 's' : ''}
+              {results.length} result{results.length !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
 
-        {/* Results */}
-        {paginatedResults.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : paginatedResults.length > 0 ? (
           <div className="max-w-3xl mx-auto space-y-2 mb-8">
             {paginatedResults.map(article => (
               <ArticleCard key={article.id} article={article} variant="horizontal" />

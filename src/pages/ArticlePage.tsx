@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Tag as TagIcon, Bookmark } from 'lucide-react';
+import { Tag as TagIcon, Bookmark, Send } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, Sidebar, ShareButtons, CommentCard, CategoryBadge, AuthorMeta, LoadingSpinner } from '../components';
-import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews } from '../lib/api';
+import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews, addComment } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useBookmark } from '../hooks/useBookmark';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 import type { Article, Category, Tag, Comment } from '../types';
 
 interface ArticlePageProps {
@@ -18,6 +19,8 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [commentText, setCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
         const [articleTags, related, articleComments] = await Promise.all([
           getArticleTags(articleData.id),
           articleData.category_id ? getRelatedArticles(articleData.id, articleData.category_id) : Promise.resolve([]),
-          getArticleComments(articleData.id)
+          getArticleComments(articleData.slug)
         ]);
         setTags(articleTags);
         setRelatedArticles(related);
@@ -66,6 +69,33 @@ export function ArticlePage({ slug }: ArticlePageProps) {
     }
   };
 
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    if (!user) {
+      history.pushState(null, '', '/auth');
+      window.dispatchEvent(new Event('popstate'));
+      return;
+    }
+    setSubmittingComment(true);
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    const userAvatar = user.user_metadata?.avatar_url;
+    const comment = await addComment(slug, commentText, user.id, userName, userAvatar);
+    if (comment) {
+      setComments(prev => [...prev, comment]);
+      setCommentText('');
+      toast.success('Comment posted!');
+    } else {
+      toast.error('Failed to post comment.');
+    }
+    setSubmittingComment(false);
+  };
+
+  const navigate = (path: string) => {
+    history.pushState(null, '', path);
+    window.dispatchEvent(new Event('popstate'));
+  };
+
   if (loading) return <LoadingSpinner fullPage />;
 
   if (!article) {
@@ -75,7 +105,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="font-display text-3xl font-bold text-foreground mb-4">Article Not Found</h1>
           <p className="text-muted-foreground mb-6">The article you're looking for doesn't exist.</p>
-          <button onClick={() => { history.pushState(null, '', '/'); window.dispatchEvent(new Event('popstate')); }}
+          <button onClick={() => navigate('/')}
             className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all duration-200">
             Go Home
           </button>
@@ -153,6 +183,33 @@ export function ArticlePage({ slug }: ArticlePageProps) {
               <h3 className="font-display text-xl font-bold text-foreground mb-6">
                 Comments ({comments.length})
               </h3>
+
+              {/* Comment Form */}
+              <form onSubmit={handleAddComment} className="mb-6">
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <textarea
+                      value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      placeholder={user ? "Share your thoughts..." : "Sign in to comment"}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200 resize-none placeholder:text-muted-foreground"
+                      disabled={!user}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="submit"
+                    disabled={!commentText.trim() || submittingComment}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-all duration-200"
+                  >
+                    {submittingComment ? <LoadingSpinner size="sm" /> : <Send className="h-4 w-4" />}
+                    Post Comment
+                  </button>
+                </div>
+              </form>
+
               {comments.length > 0 ? (
                 <div className="divide-y divide-border">
                   {comments.map(comment => (
