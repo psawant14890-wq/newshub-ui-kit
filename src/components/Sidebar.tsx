@@ -38,6 +38,7 @@ function CollapsibleSection({ title, icon, defaultOpen = true, children }: {
 export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarProps) {
   const [trending, setTrending] = useState<Article[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [cats, setCats] = useState<any[]>([]);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -46,6 +47,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
       getTrendingArticles(5).then(setTrending);
     }
     getAllTags().then(setTags);
+    getCategories().then(setCats);
   }, [showTrending]);
 
   const handleSubscribe = (e: React.FormEvent) => {
