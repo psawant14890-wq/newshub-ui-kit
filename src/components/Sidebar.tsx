@@ -41,7 +41,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
   const [tags, setTags] = useState<Tag[]>([]);
   const [cats, setCats] = useState<any[]>([]);
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { subscribe, loading: nlLoading, subscribed } = useNewsletter();
 
   useEffect(() => {
     if (showTrending) {
