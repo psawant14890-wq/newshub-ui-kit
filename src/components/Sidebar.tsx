@@ -3,6 +3,7 @@ import { TrendingUp, ChevronDown, ChevronUp, Mail, Twitter, Facebook, Instagram,
 import { ArticleCard } from './ArticleCard';
 import { CategoryBadge } from './CategoryBadge';
 import { getTrendingArticles, getAllTags, getCategories } from '../lib/api';
+import { useNewsletter } from '../hooks/useNewsletter';
 import type { Article, Tag } from '../types';
 
 interface SidebarProps {
@@ -40,7 +41,7 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
   const [tags, setTags] = useState<Tag[]>([]);
   const [cats, setCats] = useState<any[]>([]);
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { subscribe, loading: nlLoading, subscribed } = useNewsletter();
 
   useEffect(() => {
     if (showTrending) {
@@ -50,11 +51,10 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
     getCategories().then(setCats);
   }, [showTrending]);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+    await subscribe(email);
+    if (!nlLoading) setEmail('');
   };
 
   const socialLinks = [

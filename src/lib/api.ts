@@ -14,7 +14,7 @@ function mapArticle(row: any): Article {
     featured_image_url: row.thumbnail || row.featured_image_url || null,
     author_id: row.author_id || null,
     category_id: null,
-    is_featured: row.views >= 5000 || false,
+    is_featured: row.featured === true || row.views >= 5000 || false,
     is_breaking: false,
     is_opinion: false,
     is_fact_checked: false,
@@ -277,6 +277,18 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getFeaturedArticle(): Promise<Article | null> {
   try {
+    // First try to get a featured article
+    const { data: featuredData, error: featuredError } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('status', 'published')
+      .eq('featured', true)
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!featuredError && featuredData) return mapArticle(featuredData);
+
+    // Fallback to most viewed
     const { data, error } = await supabase
       .from('articles')
       .select('*')
@@ -498,6 +510,17 @@ export async function getAllTags(): Promise<Tag[]> {
 export async function searchArticles(query: string): Promise<Article[]> {
   if (!query.trim()) return [];
   try {
+    // Try RPC full-text search first
+    const { data: rpcData, error: rpcError } = await supabase.rpc('search_articles', {
+      search_query: query,
+      limit_count: 20,
+      offset_count: 0,
+    });
+    if (!rpcError && rpcData && rpcData.length > 0) {
+      return rpcData.map((row: any) => mapArticle(row));
+    }
+
+    // Fallback to ILIKE search
     const { data, error } = await supabase
       .from('articles')
       .select('*')

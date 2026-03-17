@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Tag as TagIcon, Bookmark, Send } from 'lucide-react';
+import { Tag as TagIcon, Bookmark, Send, Heart } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, Sidebar, ShareButtons, CommentCard, CategoryBadge, AuthorMeta, LoadingSpinner } from '../components';
 import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews, addComment } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useBookmark } from '../hooks/useBookmark';
+import { useArticleLike } from '../hooks/useArticleLike';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import type { Article, Category, Tag, Comment } from '../types';
@@ -150,6 +151,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
                   size="md"
                 />
                 <div className="flex items-center gap-2">
+                  <ArticleLikeButton slug={article.slug} />
                   <ArticleBookmarkButton article={article} />
                   <ShareButtons title={article.title} url={`/article/${article.slug}`} />
                 </div>
@@ -240,6 +242,24 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
       <Footer />
     </div>
+  );
+}
+
+function ArticleLikeButton({ slug }: { slug: string }) {
+  const { isLiked, likesCount, toggleLike, loading } = useArticleLike(slug);
+
+  return (
+    <button
+      onClick={toggleLike}
+      disabled={loading}
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 ${
+        isLiked ? 'text-red-500 bg-red-500/10' : 'text-muted-foreground hover:text-red-500 hover:bg-accent'
+      }`}
+      title={isLiked ? 'Unlike' : 'Like this article'}
+    >
+      <Heart className={`h-5 w-5 transition-transform duration-200 ${isLiked ? 'scale-110' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
+      {likesCount > 0 && <span className="text-sm font-medium">{likesCount}</span>}
+    </button>
   );
 }
 

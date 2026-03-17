@@ -1,15 +1,15 @@
 import { Mail } from 'lucide-react';
 import { useState } from 'react';
+import { useNewsletter } from '../hooks/useNewsletter';
 
 export function Newsletter() {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { subscribe, loading, subscribed } = useNewsletter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+    await subscribe(email);
+    if (!loading) setEmail('');
   };
 
   return (
@@ -34,9 +34,10 @@ export function Newsletter() {
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-all duration-200"
+              disabled={loading}
+              className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50"
             >
-              Subscribe
+              {loading ? 'Subscribing...' : 'Subscribe'}
             </button>
           </form>
         )}

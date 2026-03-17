@@ -1,21 +1,21 @@
 import { Newspaper, ArrowUp, Twitter, Facebook, Instagram, Youtube, Linkedin, Mail } from 'lucide-react';
 import { useState } from 'react';
+import { useNewsletter } from '../hooks/useNewsletter';
 
 export function Footer() {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { subscribe, loading: nlLoading, subscribed } = useNewsletter();
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
     window.dispatchEvent(new Event('popstate'));
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+    await subscribe(email);
+    if (!nlLoading) setEmail('');
   };
 
   const scrollToTop = () => {
