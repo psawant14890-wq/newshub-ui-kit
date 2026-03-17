@@ -4,7 +4,7 @@ import { useNewsletter } from '../hooks/useNewsletter';
 
 export function Footer() {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { subscribe, loading: nlLoading, subscribed } = useNewsletter();
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
