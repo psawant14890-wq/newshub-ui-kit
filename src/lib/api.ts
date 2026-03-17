@@ -14,7 +14,7 @@ function mapArticle(row: any): Article {
     featured_image_url: row.thumbnail || row.featured_image_url || null,
     author_id: row.author_id || null,
     category_id: null,
-    is_featured: row.views >= 5000 || false,
+    is_featured: row.featured === true || row.views >= 5000 || false,
     is_breaking: false,
     is_opinion: false,
     is_fact_checked: false,
