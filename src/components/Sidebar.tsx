@@ -3,6 +3,7 @@ import { TrendingUp, ChevronDown, ChevronUp, Mail, Twitter, Facebook, Instagram,
 import { ArticleCard } from './ArticleCard';
 import { CategoryBadge } from './CategoryBadge';
 import { getTrendingArticles, getAllTags, getCategories } from '../lib/api';
+import { useNewsletter } from '../hooks/useNewsletter';
 import type { Article, Tag } from '../types';
 
 interface SidebarProps {
