@@ -51,11 +51,10 @@ export function Sidebar({ showNewsletter = true, showTrending = true }: SidebarP
     getCategories().then(setCats);
   }, [showTrending]);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+    await subscribe(email);
+    if (!nlLoading) setEmail('');
   };
 
   const socialLinks = [

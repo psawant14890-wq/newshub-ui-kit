@@ -11,12 +11,11 @@ export function Footer() {
     window.dispatchEvent(new Event('popstate'));
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    setSubscribed(true);
-    setEmail('');
-    setTimeout(() => setSubscribed(false), 3000);
+    await subscribe(email);
+    if (!nlLoading) setEmail('');
   };
 
   const scrollToTop = () => {
