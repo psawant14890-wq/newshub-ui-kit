@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Tag as TagIcon, Bookmark, Send } from 'lucide-react';
+import { Tag as TagIcon, Bookmark, Send, Heart } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, Sidebar, ShareButtons, CommentCard, CategoryBadge, AuthorMeta, LoadingSpinner } from '../components';
 import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews, addComment } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useBookmark } from '../hooks/useBookmark';
+import { useArticleLike } from '../hooks/useArticleLike';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import type { Article, Category, Tag, Comment } from '../types';
