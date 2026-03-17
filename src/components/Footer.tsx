@@ -1,5 +1,6 @@
 import { Newspaper, ArrowUp, Twitter, Facebook, Instagram, Youtube, Linkedin, Mail } from 'lucide-react';
 import { useState } from 'react';
+import { useNewsletter } from '../hooks/useNewsletter';
 
 export function Footer() {
   const [email, setEmail] = useState('');
