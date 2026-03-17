@@ -245,6 +245,24 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   );
 }
 
+function ArticleLikeButton({ slug }: { slug: string }) {
+  const { isLiked, likesCount, toggleLike, loading } = useArticleLike(slug);
+
+  return (
+    <button
+      onClick={toggleLike}
+      disabled={loading}
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 ${
+        isLiked ? 'text-red-500 bg-red-500/10' : 'text-muted-foreground hover:text-red-500 hover:bg-accent'
+      }`}
+      title={isLiked ? 'Unlike' : 'Like this article'}
+    >
+      <Heart className={`h-5 w-5 transition-transform duration-200 ${isLiked ? 'scale-110' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
+      {likesCount > 0 && <span className="text-sm font-medium">{likesCount}</span>}
+    </button>
+  );
+}
+
 function ArticleBookmarkButton({ article }: { article: Article }) {
   const { isSaved, toggleSave, loading } = useBookmark(
     article.slug,

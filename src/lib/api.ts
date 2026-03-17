@@ -510,6 +510,17 @@ export async function getAllTags(): Promise<Tag[]> {
 export async function searchArticles(query: string): Promise<Article[]> {
   if (!query.trim()) return [];
   try {
+    // Try RPC full-text search first
+    const { data: rpcData, error: rpcError } = await supabase.rpc('search_articles', {
+      search_query: query,
+      limit_count: 20,
+      offset_count: 0,
+    });
+    if (!rpcError && rpcData && rpcData.length > 0) {
+      return rpcData.map((row: any) => mapArticle(row));
+    }
+
+    // Fallback to ILIKE search
     const { data, error } = await supabase
       .from('articles')
       .select('*')
