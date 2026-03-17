@@ -277,6 +277,18 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getFeaturedArticle(): Promise<Article | null> {
   try {
+    // First try to get a featured article
+    const { data: featuredData, error: featuredError } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('status', 'published')
+      .eq('featured', true)
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!featuredError && featuredData) return mapArticle(featuredData);
+
+    // Fallback to most viewed
     const { data, error } = await supabase
       .from('articles')
       .select('*')
