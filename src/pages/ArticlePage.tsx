@@ -151,6 +151,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
                   size="md"
                 />
                 <div className="flex items-center gap-2">
+                  <ArticleLikeButton slug={article.slug} />
                   <ArticleBookmarkButton article={article} />
                   <ShareButtons title={article.title} url={`/article/${article.slug}`} />
                 </div>
