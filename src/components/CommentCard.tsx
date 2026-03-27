@@ -1,17 +1,25 @@
 import { useState } from 'react';
 import { Heart, MessageSquare } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { toggleCommentLike, addComment } from '../lib/api';
+import toast from 'react-hot-toast';
 import type { Comment } from '../types';
 
 interface CommentCardProps {
   comment: Comment;
   depth?: number;
+  articleSlug?: string;
+  onReplyAdded?: (reply: Comment) => void;
 }
 
-export function CommentCard({ comment, depth = 0 }: CommentCardProps) {
+export function CommentCard({ comment, depth = 0, articleSlug, onReplyAdded }: CommentCardProps) {
+  const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(comment.likes || 0);
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [replies, setReplies] = useState<Comment[]>(comment.replies || []);
 
   const getInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -21,9 +29,32 @@ export function CommentCard({ comment, depth = 0 }: CommentCardProps) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+  const handleLike = async () => {
+    if (!user) {
+      toast.error('Login to like comments');
+      return;
+    }
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount(prev => wasLiked ? prev - 1 : prev + 1);
+    await toggleCommentLike(comment.id, user.id);
+  };
+
+  const handleReply = async () => {
+    if (!replyText.trim() || !user || !articleSlug) return;
+    setSubmitting(true);
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    const result = await addComment(articleSlug, replyText, user.id, userName, user.user_metadata?.avatar_url, comment.id);
+    if (result) {
+      setReplies(prev => [...prev, result]);
+      setReplyText('');
+      setShowReply(false);
+      onReplyAdded?.(result);
+      toast.success('Reply posted!');
+    } else {
+      toast.error('Failed to post reply.');
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -63,11 +94,17 @@ export function CommentCard({ comment, depth = 0 }: CommentCardProps) {
                 <input
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
-                  placeholder="Write a reply..."
+                  placeholder={user ? "Write a reply..." : "Login to reply"}
+                  disabled={!user || submitting}
                   className="flex-1 px-3 py-2 text-sm bg-accent/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground transition-all duration-200"
+                  onKeyDown={e => e.key === 'Enter' && handleReply()}
                 />
-                <button className="px-3 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all duration-200">
-                  Reply
+                <button
+                  onClick={handleReply}
+                  disabled={!replyText.trim() || submitting || !user}
+                  className="px-3 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 transition-all duration-200"
+                >
+                  {submitting ? '...' : 'Reply'}
                 </button>
               </div>
             )}
@@ -75,8 +112,8 @@ export function CommentCard({ comment, depth = 0 }: CommentCardProps) {
         </div>
       </div>
 
-      {comment.replies?.map(reply => (
-        <CommentCard key={reply.id} comment={reply} depth={depth + 1} />
+      {replies.map(reply => (
+        <CommentCard key={reply.id} comment={reply} depth={depth + 1} articleSlug={articleSlug} />
       ))}
     </div>
   );
