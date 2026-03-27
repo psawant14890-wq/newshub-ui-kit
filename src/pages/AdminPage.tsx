@@ -44,7 +44,7 @@ export function AdminPage() {
     window.dispatchEvent(new Event('popstate'));
   };
 
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
 
   useEffect(() => {
     if (!isAdmin) {
@@ -170,12 +170,11 @@ export function AdminPage() {
   };
 
   const handleToggleStatus = async (article: Article) => {
-    const newStatus = article.view_count >= 0 ? 'published' : 'draft'; // simplified
-    const success = await updateArticle(article.id, {
-      status: newStatus === 'published' ? 'draft' : 'published',
-    });
+    const currentlyPublished = article.is_featured || (article as any)._status === 'published';
+    const newStatus = currentlyPublished ? 'draft' : 'published';
+    const success = await updateArticle(article.id, { status: newStatus });
     if (success) {
-      toast.success(`Article ${newStatus === 'published' ? 'unpublished' : 'published'}!`);
+      toast.success(`Article ${newStatus === 'published' ? 'published' : 'unpublished'}!`);
       await loadData();
     }
   };

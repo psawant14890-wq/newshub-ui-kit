@@ -388,8 +388,23 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 }
 
 export async function getArticleTags(articleId: string): Promise<Tag[]> {
-  // Tags are stored as TEXT[] on the article row in Supabase
-  // If we already have the article, tags come with it
+  try {
+    const { data } = await supabase
+      .from('articles')
+      .select('tags')
+      .eq('id', articleId)
+      .maybeSingle();
+    if (data?.tags?.length) {
+      return data.tags.map((t: string, i: number) => ({
+        id: `tag-${i}`,
+        name: t,
+        slug: t.toLowerCase().replace(/\s+/g, '-'),
+        created_at: new Date().toISOString(),
+      }));
+    }
+  } catch {
+    // fall through
+  }
   const index = parseInt(articleId) % mockTags.length;
   return mockTags.slice(index, index + 3);
 }

@@ -215,7 +215,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
               {comments.length > 0 ? (
                 <div className="divide-y divide-border">
                   {comments.map(comment => (
-                    <CommentCard key={comment.id} comment={comment} />
+                    <CommentCard key={comment.id} comment={comment} articleSlug={article.slug} />
                   ))}
                 </div>
               ) : (
