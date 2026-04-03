@@ -114,7 +114,10 @@ export function SearchPage({ query = '' }: SearchPageProps) {
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <EmptyState icon={AlertTriangle} title="Something went wrong" description="Search failed. Please try again."
+            buttonText="Retry" onButtonClick={performSearch} />
+        ) : loading ? (
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
