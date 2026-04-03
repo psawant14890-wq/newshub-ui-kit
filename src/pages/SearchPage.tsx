@@ -15,6 +15,7 @@ export function SearchPage({ query = '' }: SearchPageProps) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'relevance'>('latest');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
 
