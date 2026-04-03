@@ -31,6 +31,7 @@ export function SearchPage({ query = '' }: SearchPageProps) {
 
   const performSearch = async () => {
     setLoading(true);
+    setError(false);
     try {
       let articles: Article[];
       if (searchQuery.trim()) {
@@ -38,20 +39,18 @@ export function SearchPage({ query = '' }: SearchPageProps) {
       } else {
         articles = await getRecentArticles(50);
       }
-
       if (selectedCategory) {
         articles = articles.filter(a => a.category?.slug === selectedCategory);
       }
-
       if (sortBy === 'latest') {
         articles.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
       } else {
         articles.sort((a, b) => b.view_count - a.view_count);
       }
-
       setResults(articles);
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
