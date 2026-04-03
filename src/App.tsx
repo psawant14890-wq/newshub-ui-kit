@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/Toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AIChatbot } from './components/AIChatbot';
 import { Toaster } from 'react-hot-toast';
 import { HomePage } from './pages/HomePage';
 import { ArticlePage } from './pages/ArticlePage';
@@ -15,6 +16,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AboutPage, EditorialPolicyPage, PrivacyPage, TermsPage } from './pages/StaticPage';
 import { AdminPage } from './pages/AdminPage';
+import { RSSFeed } from './pages/RSSFeed';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -25,15 +27,12 @@ function AppContent() {
       setRoute(window.location.pathname);
       setSearchQuery(new URLSearchParams(window.location.search).get('q') || '');
     };
-
     window.addEventListener('popstate', handleNavigation);
-
     const originalPushState = history.pushState;
     history.pushState = function (...args) {
       originalPushState.apply(this, args);
       handleNavigation();
     };
-
     return () => {
       window.removeEventListener('popstate', handleNavigation);
       history.pushState = originalPushState;
@@ -52,6 +51,7 @@ function AppContent() {
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;
   if (route === '/terms') return <TermsPage />;
+  if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
   return <NotFoundPage />;
 }
 
@@ -61,15 +61,13 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <AppContent />
+          <AIChatbot />
           <ToastContainer />
           <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
-              style: {
-                borderRadius: '8px',
-                fontSize: '14px',
-              },
+              style: { borderRadius: '8px', fontSize: '14px' },
             }}
           />
         </ToastProvider>
