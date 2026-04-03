@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, X, SearchX } from 'lucide-react';
+import { Search, X, SearchX, AlertTriangle } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, EmptyState, Pagination } from '../components';
 import { getCategories, searchArticles, getRecentArticles } from '../lib/api';
 import type { Article, Category } from '../types';
@@ -15,6 +15,7 @@ export function SearchPage({ query = '' }: SearchPageProps) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'relevance'>('latest');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
 
@@ -30,6 +31,7 @@ export function SearchPage({ query = '' }: SearchPageProps) {
 
   const performSearch = async () => {
     setLoading(true);
+    setError(false);
     try {
       let articles: Article[];
       if (searchQuery.trim()) {
@@ -37,20 +39,18 @@ export function SearchPage({ query = '' }: SearchPageProps) {
       } else {
         articles = await getRecentArticles(50);
       }
-
       if (selectedCategory) {
         articles = articles.filter(a => a.category?.slug === selectedCategory);
       }
-
       if (sortBy === 'latest') {
         articles.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
       } else {
         articles.sort((a, b) => b.view_count - a.view_count);
       }
-
       setResults(articles);
-    } catch (error) {
-      console.error('Search error:', error);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,10 @@ export function SearchPage({ query = '' }: SearchPageProps) {
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <EmptyState icon={AlertTriangle} title="Something went wrong" description="Search failed. Please try again."
+            buttonText="Retry" onButtonClick={performSearch} />
+        ) : loading ? (
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
