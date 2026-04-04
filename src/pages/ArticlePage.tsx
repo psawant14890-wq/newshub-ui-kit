@@ -9,6 +9,7 @@ import { useBookmark } from '../hooks/useBookmark';
 import { useArticleLike } from '../hooks/useArticleLike';
 import { useSEO } from '../hooks/useSEO';
 import { supabase } from '../lib/supabase';
+import { trackEvent } from '../hooks/useAnalytics';
 import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
 import type { Article, Category, Tag, Comment } from '../types';
