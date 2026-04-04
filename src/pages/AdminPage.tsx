@@ -344,6 +344,7 @@ export function AdminPage() {
   const tabs = [
     { id: 'articles' as const, label: 'Articles', icon: FileText },
     { id: 'comments' as const, label: 'Comments', icon: MessageSquare },
+    { id: 'ai-generator' as const, label: 'AI Generator', icon: Bot },
     { id: 'stats' as const, label: 'Stats', icon: BarChart3 },
   ];
 
