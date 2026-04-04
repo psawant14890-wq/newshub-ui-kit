@@ -475,6 +475,10 @@ export function AdminPage() {
             </div>
           </div>
         )}
+
+        {tab === 'ai-generator' && (
+          <AutoGeneratorPanel />
+        )}
       </main>
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Article" size="sm">
