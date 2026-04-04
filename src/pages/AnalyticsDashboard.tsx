@@ -124,7 +124,7 @@ export function AnalyticsDashboard() {
             <h3 className="text-sm font-semibold text-foreground mb-4">Device Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={data.deviceBreakdown} dataKey="count" nameKey="device" cx="50%" cy="50%" outerRadius={80} label={({ device, count }) => `${device}: ${count}`}>
+                <Pie data={data.deviceBreakdown} dataKey="count" nameKey="device" cx="50%" cy="50%" outerRadius={80} label={(entry: any) => `${entry.device}: ${entry.count}`}>
                   {data.deviceBreakdown.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
