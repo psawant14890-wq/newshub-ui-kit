@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
 
-type AdminTab = 'articles' | 'comments' | 'stats';
+type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator';
 
 interface ArticleForm {
   title: string;
