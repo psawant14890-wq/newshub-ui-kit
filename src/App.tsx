@@ -17,6 +17,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { AboutPage, EditorialPolicyPage, PrivacyPage, TermsPage } from './pages/StaticPage';
 import { AdminPage } from './pages/AdminPage';
 import { RSSFeed } from './pages/RSSFeed';
+import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
