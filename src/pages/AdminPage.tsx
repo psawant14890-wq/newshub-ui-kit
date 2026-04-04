@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
+import { EditorialChecklist } from '../components/EditorialChecklist';
+import { AutoGeneratorPanel } from '../components/AutoGeneratorPanel';
 import { useAuth } from '../context/AuthContext';
 import { useTagGenerator } from '../hooks/useTagGenerator';
 import { getAllArticles, getCategories, createArticle, updateArticle, deleteArticle } from '../lib/api';
