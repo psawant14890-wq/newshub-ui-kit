@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
+import { EditorialChecklist } from '../components/EditorialChecklist';
+import { AutoGeneratorPanel } from '../components/AutoGeneratorPanel';
 import { useAuth } from '../context/AuthContext';
 import { useTagGenerator } from '../hooks/useTagGenerator';
 import { getAllArticles, getCategories, createArticle, updateArticle, deleteArticle } from '../lib/api';
@@ -9,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
 
-type AdminTab = 'articles' | 'comments' | 'stats';
+type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator';
 
 interface ArticleForm {
   title: string;
@@ -308,6 +310,15 @@ export function AdminPage() {
               </label>
             </div>
 
+            {/* Editorial Checklist */}
+            <EditorialChecklist
+              title={form.title} body={form.body} excerpt={form.excerpt}
+              metaTitle={form.metaTitle} metaDescription={form.metaDescription}
+              tags={form.tags} thumbnail={form.thumbnail}
+              onPublish={() => { setForm(prev => ({ ...prev, status: 'published' })); handleSave(); }}
+              publishing={saving}
+            />
+
             <div className="flex gap-3 pt-4 border-t border-border">
               <button onClick={handleSave} disabled={saving}
                 className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2">
@@ -333,6 +344,7 @@ export function AdminPage() {
   const tabs = [
     { id: 'articles' as const, label: 'Articles', icon: FileText },
     { id: 'comments' as const, label: 'Comments', icon: MessageSquare },
+    { id: 'ai-generator' as const, label: 'AI Generator', icon: Bot },
     { id: 'stats' as const, label: 'Stats', icon: BarChart3 },
   ];
 
@@ -345,6 +357,11 @@ export function AdminPage() {
           {tab === 'articles' && (
             <button onClick={openNewArticle} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-all">
               <Plus className="h-4 w-4" /> New Article
+            </button>
+          )}
+          {tab === 'stats' && (
+            <button onClick={() => navigate('/admin/analytics')} className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-all text-sm">
+              <TrendingUp className="h-4 w-4" /> Full Analytics
             </button>
           )}
         </div>
@@ -462,6 +479,10 @@ export function AdminPage() {
               ))}
             </div>
           </div>
+        )}
+
+        {tab === 'ai-generator' && (
+          <AutoGeneratorPanel />
         )}
       </main>
 

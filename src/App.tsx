@@ -17,6 +17,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { AboutPage, EditorialPolicyPage, PrivacyPage, TermsPage } from './pages/StaticPage';
 import { AdminPage } from './pages/AdminPage';
 import { RSSFeed } from './pages/RSSFeed';
+import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -47,6 +48,7 @@ function AppContent() {
   if (route === '/search') return <SearchPage query={searchQuery} />;
   if (route === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
   if (route === '/admin') return <ProtectedRoute><AdminPage /></ProtectedRoute>;
+  if (route === '/admin/analytics') return <ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>;
   if (route === '/about') return <AboutPage />;
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;
