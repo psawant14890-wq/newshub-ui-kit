@@ -563,6 +563,21 @@ export async function addComment(
   parentId?: string,
 ): Promise<Comment | null> {
   try {
+    // Toxicity check via Gemini
+    try {
+      const { generateWithGemini } = await import('./gemini');
+      const toxicityResult = await generateWithGemini(
+        `Is this comment toxic, offensive, or hateful? Comment: "${body}" Reply with ONLY: safe OR toxic`
+      );
+      if (toxicityResult.trim().toLowerCase().includes('toxic')) {
+        const toast = (await import('react-hot-toast')).default;
+        toast.error('Your comment was flagged as inappropriate and was not posted.');
+        return null;
+      }
+    } catch {
+      // If Gemini fails, allow the comment through
+    }
+
     const { data, error } = await supabase
       .from('comments')
       .insert({

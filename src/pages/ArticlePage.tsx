@@ -48,7 +48,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
     } : undefined,
   });
 
-  useEffect(() => { loadData(); window.scrollTo(0, 0); }, [slug]);
+  useEffect(() => { loadData(); window.scrollTo(0, 0); trackEvent('article_view', slug, user?.id); }, [slug]);
 
   useEffect(() => {
     if (user && article) {
