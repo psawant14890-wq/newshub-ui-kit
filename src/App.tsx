@@ -48,6 +48,7 @@ function AppContent() {
   if (route === '/search') return <SearchPage query={searchQuery} />;
   if (route === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
   if (route === '/admin') return <ProtectedRoute><AdminPage /></ProtectedRoute>;
+  if (route === '/admin/analytics') return <ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>;
   if (route === '/about') return <AboutPage />;
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;

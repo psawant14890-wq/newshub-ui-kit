@@ -359,6 +359,11 @@ export function AdminPage() {
               <Plus className="h-4 w-4" /> New Article
             </button>
           )}
+          {tab === 'stats' && (
+            <button onClick={() => navigate('/admin/analytics')} className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-all text-sm">
+              <TrendingUp className="h-4 w-4" /> Full Analytics
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1 mb-8 border-b border-border">
