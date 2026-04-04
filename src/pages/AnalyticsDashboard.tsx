@@ -109,7 +109,7 @@ export function AnalyticsDashboard() {
             <h3 className="text-sm font-semibold text-foreground mb-4">Articles by Category</h3>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={data.categoryBreakdown} dataKey="count" nameKey="category" cx="50%" cy="50%" outerRadius={80} label={({ category, count }) => `${category}: ${count}`}>
+                <Pie data={data.categoryBreakdown} dataKey="count" nameKey="category" cx="50%" cy="50%" outerRadius={80} label={(entry: any) => `${entry.category}: ${entry.count}`}>
                   {data.categoryBreakdown.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
