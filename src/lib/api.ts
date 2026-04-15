@@ -4,7 +4,7 @@ import type { Article, Category, Tag, Comment, Author } from '../types';
 // ============================================================
 // Helper: map Supabase article rows → Article type
 // ============================================================
-function mapArticle(row: any): Article {
+function mapArticle(row: any): Article & { _status?: string; is_ai_generated?: boolean } {
   return {
     id: row.id,
     title: row.title,
@@ -15,9 +15,11 @@ function mapArticle(row: any): Article {
     author_id: row.author_id || null,
     category_id: null,
     is_featured: row.featured === true || row.views >= 5000 || false,
-    is_breaking: false,
+    is_breaking: row.is_breaking || false,
     is_opinion: false,
     is_fact_checked: false,
+    _status: row.status || 'published',
+    is_ai_generated: row.is_ai_generated || false,
     view_count: row.views || 0,
     published_at: row.published_at || row.created_at,
     updated_at: row.updated_at || row.created_at,
