@@ -4,7 +4,7 @@ import type { Article, Category, Tag, Comment, Author } from '../types';
 // ============================================================
 // Helper: map Supabase article rows → Article type
 // ============================================================
-function mapArticle(row: any): Article {
+function mapArticle(row: any): Article & { _status?: string; is_ai_generated?: boolean } {
   return {
     id: row.id,
     title: row.title,
