@@ -1,15 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
 import { EditorialChecklist } from '../components/EditorialChecklist';
 import { AutoGeneratorPanel } from '../components/AutoGeneratorPanel';
+import { UnsplashModal } from '../components/UnsplashModal';
+import { ShareModal } from '../components/ShareModal';
 import { useAuth } from '../context/AuthContext';
 import { useTagGenerator } from '../hooks/useTagGenerator';
+import { useBreakingNewsDetector } from '../hooks/useBreakingNewsDetector';
+import { useInternalLinkSuggester } from '../hooks/useInternalLinkSuggester';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { generateWithGemini } from '../lib/gemini';
 import { getAllArticles, getCategories, createArticle, updateArticle, deleteArticle } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
+import MDEditor from '@uiw/react-md-editor';
 
 type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator';
 
@@ -29,13 +36,14 @@ interface ArticleForm {
   focusKeyword: string;
   isFeatured: boolean;
   isBreaking: boolean;
+  scheduledAt: string;
 }
 
 const emptyForm: ArticleForm = {
   title: '', slug: '', category: 'Technology', tags: '',
   excerpt: '', thumbnail: '', thumbnailAlt: '', body: '', status: 'draft',
   metaTitle: '', metaDescription: '', canonicalUrl: '', focusKeyword: '',
-  isFeatured: false, isBreaking: false,
+  isFeatured: false, isBreaking: false, scheduledAt: '',
 };
 
 export function AdminPage() {
@@ -52,6 +60,15 @@ export function AdminPage() {
   const [comments, setComments] = useState<any[]>([]);
   const [stats, setStats] = useState({ articles: 0, comments: 0, views: 0 });
   const { generateTags, loading: tagsLoading } = useTagGenerator();
+  const { checkBreaking, checking: breakingChecking } = useBreakingNewsDetector();
+  const { suggestLinks, suggestions: linkSuggestions, loading: linksLoading } = useInternalLinkSuggester();
+  const { sendNotification } = usePushNotifications();
+  const [showUnsplash, setShowUnsplash] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [publishedSlug, setPublishedSlug] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [commentFilter, setCommentFilter] = useState<'all' | 'safe' | 'flagged'>('all');
+  const [generatingAlt, setGeneratingAlt] = useState(false);
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
@@ -80,10 +97,9 @@ export function AdminPage() {
   };
 
   const generateSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
   const readTime = Math.max(1, Math.ceil(form.body.split(/\s+/).filter(Boolean).length / 250));
 
-  const openNewArticle = () => { setEditingArticle(null); setForm(emptyForm); setShowEditor(true); };
+  const openNewArticle = () => { setEditingArticle(null); setForm(emptyForm); setLastSaved(null); setShowEditor(true); };
 
   const openEditArticle = (article: Article) => {
     setEditingArticle(article);
@@ -94,44 +110,56 @@ export function AdminPage() {
       status: (article as any)._status || 'published',
       metaTitle: article.meta_title || '', metaDescription: article.meta_description || '',
       canonicalUrl: '', focusKeyword: '', isFeatured: article.is_featured, isBreaking: article.is_breaking,
+      scheduledAt: '',
     });
+    setLastSaved(null);
     setShowEditor(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (overrideStatus?: string) => {
     if (!form.title || !form.slug || !form.body) { toast.error('Title, slug, and body are required.'); return; }
     setSaving(true);
     try {
       const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Admin';
       const userAvatar = user?.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`;
+      const finalStatus = overrideStatus || form.status;
 
       const articleData: Record<string, any> = {
         title: form.title, slug: form.slug, category: form.category,
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-        excerpt: form.excerpt, thumbnail: form.thumbnail, body: form.body, status: form.status,
+        excerpt: form.excerpt, thumbnail: form.thumbnail, body: form.body, status: finalStatus,
         meta_title: form.metaTitle || null, meta_description: form.metaDescription || null,
         canonical_url: form.canonicalUrl || null, focus_keyword: form.focusKeyword || null,
         featured: form.isFeatured, is_breaking: form.isBreaking,
         thumbnail_alt: form.thumbnailAlt || null,
         read_time: readTime,
+        scheduled_at: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : null,
       };
 
       if (editingArticle) {
         const success = await updateArticle(editingArticle.id, articleData);
-        if (success) toast.success('Article updated!');
+        if (success) { toast.success('Article updated!'); setLastSaved(new Date()); }
         else toast.error('Failed to update article.');
       } else {
         const result = await createArticle({
           slug: form.slug, title: form.title, excerpt: form.excerpt, body: form.body,
           thumbnail: form.thumbnail, category: form.category,
           tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-          author_name: userName, author_avatar: userAvatar, status: form.status,
+          author_name: userName, author_avatar: userAvatar, status: finalStatus,
         });
-        if (result) toast.success('Article created!');
-        else toast.error('Failed to create article.');
+        if (result) {
+          toast.success('Article created!');
+          setLastSaved(new Date());
+
+          if (finalStatus === 'published') {
+            setPublishedSlug(form.slug);
+            setShowShareModal(true);
+            sendNotification('New Article Published', form.title, `/article/${form.slug}`);
+          }
+        } else toast.error('Failed to create article.');
       }
-      setShowEditor(false);
-      await loadData();
+
+      if (!showShareModal) { setShowEditor(false); await loadData(); }
     } catch { toast.error('Something went wrong.'); }
     finally { setSaving(false); }
   };
@@ -144,7 +172,8 @@ export function AdminPage() {
   };
 
   const handleToggleStatus = async (article: Article) => {
-    const newStatus = (article as any)._status === 'published' || article.is_featured ? 'draft' : 'published';
+    const currentStatus = (article as any)._status;
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published';
     const success = await updateArticle(article.id, { status: newStatus });
     if (success) { toast.success(`Article ${newStatus === 'published' ? 'published' : 'unpublished'}!`); await loadData(); }
   };
@@ -162,6 +191,35 @@ export function AdminPage() {
     }
   };
 
+  const handleCheckBreaking = async () => {
+    const isBreaking = await checkBreaking(form.title, form.excerpt);
+    if (isBreaking) {
+      const confirmed = window.confirm('This looks like breaking news! Mark as breaking?');
+      if (confirmed) setForm(prev => ({ ...prev, isBreaking: true }));
+    } else {
+      toast('This doesn\'t appear to be breaking news.');
+    }
+  };
+
+  const handleGenerateAlt = async () => {
+    if (!form.thumbnail || !form.title) { toast.error('Need thumbnail URL and title first.'); return; }
+    setGeneratingAlt(true);
+    try {
+      const alt = await generateWithGemini(
+        `Generate a descriptive alt text for an image used in a news article titled: "${form.title}". The image URL is: ${form.thumbnail}. Return only the alt text, max 125 characters.`
+      );
+      setForm(prev => ({ ...prev, thumbnailAlt: alt.trim().replace(/^"|"$/g, '') }));
+      toast.success('Alt text generated!');
+    } catch { toast.error('Failed to generate alt text.'); }
+    finally { setGeneratingAlt(false); }
+  };
+
+  const handleSuggestLinks = async () => {
+    const results = await suggestLinks(form.body);
+    if (results.length === 0) toast('No internal link suggestions found.');
+    else toast.success(`Found ${results.length} link suggestions!`);
+  };
+
   if (!isAdmin) return null;
   if (loading) return <LoadingSpinner fullPage />;
 
@@ -171,9 +229,16 @@ export function AdminPage() {
       <div className="min-h-screen bg-background">
         <Navbar categories={categories} />
         <main className="container mx-auto px-4 py-8 max-w-4xl">
-          <button onClick={() => setShowEditor(false)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Back to articles
-          </button>
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => setShowEditor(false)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" /> Back to articles
+            </button>
+            {lastSaved && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" /> Last saved: {Math.floor((Date.now() - lastSaved.getTime()) / 60000)} min ago
+              </span>
+            )}
+          </div>
 
           <h1 className="font-display text-2xl font-bold text-foreground mb-6">
             {editingArticle ? 'Edit Article' : 'New Article'}
@@ -234,26 +299,68 @@ export function AdminPage() {
                 className="w-full px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none" placeholder="Brief description..." />
             </div>
 
+            {/* Thumbnail with Unsplash */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Thumbnail URL</label>
-              <input value={form.thumbnail} onChange={e => setForm(prev => ({ ...prev, thumbnail: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="https://images.unsplash.com/..." />
+              <div className="flex gap-2">
+                <input value={form.thumbnail} onChange={e => setForm(prev => ({ ...prev, thumbnail: e.target.value }))}
+                  className="flex-1 px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="https://images.unsplash.com/..." />
+                <button onClick={() => setShowUnsplash(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-border rounded-lg hover:bg-accent transition-all whitespace-nowrap">
+                  <ImageIcon className="h-3.5 w-3.5" /> Unsplash
+                </button>
+              </div>
               {form.thumbnail && <img src={form.thumbnail} alt="Preview" className="mt-2 h-32 object-cover rounded-lg" />}
             </div>
 
+            {/* Alt text with AI generation */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Alt Text</label>
-              <input value={form.thumbnailAlt} onChange={e => setForm(prev => ({ ...prev, thumbnailAlt: e.target.value }))}
-                className="w-full px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="Descriptive alt text..." />
+              <div className="flex gap-2">
+                <input value={form.thumbnailAlt} onChange={e => setForm(prev => ({ ...prev, thumbnailAlt: e.target.value }))}
+                  className="flex-1 px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" placeholder="Descriptive alt text..." />
+                <button onClick={handleGenerateAlt} disabled={generatingAlt}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-500/20 disabled:opacity-50 transition-all whitespace-nowrap">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {generatingAlt ? '...' : 'AI Alt'}
+                </button>
+              </div>
             </div>
 
+            {/* Markdown Editor */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-foreground">Body (HTML)</label>
-                <span className="text-xs text-muted-foreground">Estimated read time: {readTime} min</span>
+                <label className="block text-sm font-medium text-foreground">Body (Markdown/HTML)</label>
+                <div className="flex items-center gap-3">
+                  <button onClick={handleSuggestLinks} disabled={linksLoading}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-all disabled:opacity-50">
+                    <Link2 className="h-3.5 w-3.5" /> {linksLoading ? 'Checking...' : 'Suggest Links'}
+                  </button>
+                  <span className="text-xs text-muted-foreground">Est. read time: {readTime} min</span>
+                </div>
               </div>
-              <textarea value={form.body} onChange={e => setForm(prev => ({ ...prev, body: e.target.value }))} rows={12}
-                className="w-full px-4 py-2.5 border border-border rounded-lg bg-card text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-y" placeholder="<h2>Article heading</h2><p>Content here...</p>" />
+              <div data-color-mode="auto">
+                <MDEditor
+                  value={form.body}
+                  onChange={val => setForm(prev => ({ ...prev, body: val || '' }))}
+                  height={350}
+                  preview="live"
+                />
+              </div>
+
+              {/* Internal link suggestions */}
+              {linkSuggestions.length > 0 && (
+                <div className="mt-3 p-3 bg-card border border-border rounded-lg">
+                  <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1"><Link2 className="h-3 w-3" /> Internal Link Suggestions</h4>
+                  <div className="space-y-1.5">
+                    {linkSuggestions.map((s, i) => (
+                      <div key={i} className="text-xs text-muted-foreground">
+                        Link "<span className="text-foreground font-medium">{s.keyword}</span>" → <span className="text-primary">{s.articleTitle}</span> ({s.articleSlug})
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* SEO Section */}
@@ -308,6 +415,21 @@ export function AdminPage() {
                   className="rounded border-border" />
                 Breaking News
               </label>
+
+              <button onClick={handleCheckBreaking} disabled={breakingChecking}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-accent transition-all disabled:opacity-50">
+                <AlertTriangle className="h-3 w-3" /> {breakingChecking ? 'Checking...' : 'Detect Breaking'}
+              </button>
+            </div>
+
+            {/* Scheduled Publishing */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" /> Schedule Publish
+              </label>
+              <input type="datetime-local" value={form.scheduledAt} onChange={e => setForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                className="px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-sm" />
+              {form.scheduledAt && <p className="text-xs text-muted-foreground mt-1">Will be published at {new Date(form.scheduledAt).toLocaleString()}</p>}
             </div>
 
             {/* Editorial Checklist */}
@@ -315,17 +437,17 @@ export function AdminPage() {
               title={form.title} body={form.body} excerpt={form.excerpt}
               metaTitle={form.metaTitle} metaDescription={form.metaDescription}
               tags={form.tags} thumbnail={form.thumbnail}
-              onPublish={() => { setForm(prev => ({ ...prev, status: 'published' })); handleSave(); }}
+              onPublish={() => handleSave('published')}
               publishing={saving}
             />
 
             <div className="flex gap-3 pt-4 border-t border-border">
-              <button onClick={handleSave} disabled={saving}
+              <button onClick={() => handleSave()} disabled={saving}
                 className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2">
                 {saving && <LoadingSpinner size="sm" />}
                 {editingArticle ? 'Update Article' : 'Create Article'}
               </button>
-              <button onClick={() => { setForm(prev => ({ ...prev, status: 'draft' })); handleSave(); }} disabled={saving}
+              <button onClick={() => handleSave('draft')} disabled={saving}
                 className="px-6 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-all">
                 Save Draft
               </button>
@@ -337,6 +459,12 @@ export function AdminPage() {
           </div>
         </main>
         <Footer />
+
+        <UnsplashModal isOpen={showUnsplash} onClose={() => setShowUnsplash(false)}
+          onSelect={(url, alt) => setForm(prev => ({ ...prev, thumbnail: url, thumbnailAlt: alt }))} />
+
+        <ShareModal isOpen={showShareModal} onClose={() => { setShowShareModal(false); setShowEditor(false); loadData(); }}
+          title={form.title} slug={publishedSlug} />
       </div>
     );
   }
@@ -393,7 +521,14 @@ export function AdminPage() {
               <tbody>
                 {articles.map(article => (
                   <tr key={article.id} className="border-b border-border hover:bg-accent/50 transition-colors">
-                    <td className="py-3 px-4"><p className="font-medium text-foreground line-clamp-1">{article.title}</p></td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground line-clamp-1">{article.title}</p>
+                        {(article as any).is_ai_generated && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">AI</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 text-muted-foreground">{article.category?.name}</td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${
@@ -426,23 +561,38 @@ export function AdminPage() {
         )}
 
         {tab === 'comments' && (
-          <div className="space-y-3">
-            {comments.length > 0 ? comments.map((comment: any) => (
-              <div key={comment.id} className="flex items-start gap-4 p-4 bg-card border border-border rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-foreground">{comment.user_name}</span>
-                    <span className="text-xs text-muted-foreground">on {comment.article_slug}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{comment.body}</p>
-                </div>
-                <button onClick={() => handleDeleteComment(comment.id)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
-                  <Trash2 className="h-4 w-4" />
+          <div>
+            <div className="flex gap-2 mb-4">
+              {(['all', 'safe', 'flagged'] as const).map(f => (
+                <button key={f} onClick={() => setCommentFilter(f)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    commentFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}>
+                  {f === 'all' ? 'All' : f === 'safe' ? 'Safe' : 'Flagged'}
                 </button>
-              </div>
-            )) : <p className="text-center text-muted-foreground py-12">No comments yet.</p>}
+              ))}
+            </div>
+            <div className="space-y-3">
+              {comments.length > 0 ? comments.map((comment: any) => (
+                <div key={comment.id} className="flex items-start gap-4 p-4 bg-card border border-border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-foreground">{comment.user_name}</span>
+                      <span className="text-xs text-muted-foreground">on {comment.article_slug}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-0.5">
+                        <Shield className="h-2.5 w-2.5" /> Safe
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{comment.body}</p>
+                  </div>
+                  <button onClick={() => handleDeleteComment(comment.id)}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )) : <p className="text-center text-muted-foreground py-12">No comments yet.</p>}
+            </div>
           </div>
         )}
 
