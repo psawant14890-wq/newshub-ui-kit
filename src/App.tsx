@@ -18,6 +18,7 @@ import { AboutPage, EditorialPolicyPage, PrivacyPage, TermsPage } from './pages/
 import { AdminPage } from './pages/AdminPage';
 import { RSSFeed } from './pages/RSSFeed';
 import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
+import { Sitemap } from './pages/Sitemap';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -54,6 +55,7 @@ function AppContent() {
   if (route === '/privacy') return <PrivacyPage />;
   if (route === '/terms') return <TermsPage />;
   if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
+  if (route === '/sitemap.xml' || route === '/sitemap') return <Sitemap />;
   return <NotFoundPage />;
 }
 
