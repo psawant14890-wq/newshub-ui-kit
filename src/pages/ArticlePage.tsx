@@ -10,6 +10,7 @@ import { useArticleLike } from '../hooks/useArticleLike';
 import { useSEO } from '../hooks/useSEO';
 import { supabase } from '../lib/supabase';
 import { trackEvent } from '../hooks/useAnalytics';
+import { useScrollDepthTracker, useTimeOnPageTracker, useTrafficSourceTracker } from '../hooks/useAdvancedAnalytics';
 import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
 import type { Article, Category, Tag, Comment } from '../types';
@@ -29,6 +30,9 @@ export function ArticlePage({ slug }: ArticlePageProps) {
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const { user } = useAuth();
+  useScrollDepthTracker(slug);
+  useTimeOnPageTracker(slug);
+  useTrafficSourceTracker(slug);
 
   useSEO({
     title: article?.title,
@@ -186,7 +190,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
             {article.featured_image_url && (
               <div className="mb-8 rounded-lg overflow-hidden">
-                <img src={article.featured_image_url} alt={article.title} className="w-full h-auto object-cover" />
+                <img src={article.featured_image_url} alt={article.title} className="w-full h-auto object-cover" loading="lazy" />
               </div>
             )}
 
