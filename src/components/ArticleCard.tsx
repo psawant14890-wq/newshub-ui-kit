@@ -40,6 +40,7 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
           <img
             src={article.featured_image_url}
             alt={article.title}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
@@ -76,6 +77,7 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
             <img
               src={article.featured_image_url}
               alt={article.title}
+              loading="lazy"
               className="w-full h-full object-cover"
               onError={() => setImgError(true)}
             />
@@ -113,9 +115,10 @@ export function ArticleCard({ article, variant = 'default', onSave, isSaved = fa
       <div className="relative aspect-video overflow-hidden">
         {article.featured_image_url && !imgError ? (
           <img
-            src={article.featured_image_url}
-            alt={article.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              src={article.featured_image_url}
+              alt={article.title}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (

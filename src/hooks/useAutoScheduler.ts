@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useArticleGenerator } from './useArticleGenerator';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export function useAutoScheduler() {
@@ -12,19 +13,58 @@ export function useAutoScheduler() {
 
   const scanAndGenerate = useCallback(async () => {
     try {
-      const res = await fetch('https://www.reddit.com/r/worldnews/hot.json?limit=3');
+      const res = await fetch('https://www.reddit.com/r/worldnews/hot.json?limit=5');
       if (!res.ok) return;
       const data = await res.json();
       const posts = data?.data?.children || [];
       if (posts.length === 0) return;
 
-      const randomPost = posts[Math.floor(Math.random() * posts.length)]?.data;
-      if (!randomPost) return;
+      for (const child of posts) {
+        const post = child?.data;
+        if (!post || post.stickied) continue;
 
-      const article = await generateArticle(randomPost.title, undefined, randomPost.selftext?.slice(0, 300));
-      if (article) {
-        setDraftsGenerated(p => p + 1);
-        toast.success(`New AI draft: ${randomPost.title.slice(0, 50)}...`);
+        // Dedup: check pending_topics in last 24h
+        const dayAgo = new Date(Date.now() - 86400000).toISOString();
+        const { data: existing } = await supabase
+          .from('pending_topics')
+          .select('id')
+          .gte('created_at', dayAgo)
+          .ilike('title', `%${post.title.slice(0, 40)}%`)
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        // Add to pending_topics
+        const { data: topic } = await supabase
+          .from('pending_topics')
+          .insert({
+            title: post.title,
+            source: 'Reddit r/worldnews',
+            source_url: `https://reddit.com${post.permalink}`,
+            score: post.score || 0,
+            status: 'generating',
+          })
+          .select()
+          .single();
+
+        if (!topic) continue;
+
+        // Generate article
+        const article = await generateArticle(post.title, undefined, post.selftext?.slice(0, 300));
+        if (article) {
+          await supabase
+            .from('pending_topics')
+            .update({ status: 'generated', article_id: article.id })
+            .eq('id', topic.id);
+          setDraftsGenerated(p => p + 1);
+          toast.success(`New AI draft: ${post.title.slice(0, 50)}...`);
+        } else {
+          await supabase
+            .from('pending_topics')
+            .update({ status: 'pending' })
+            .eq('id', topic.id);
+        }
+        break; // Only one per scan cycle
       }
     } catch {
       // silent

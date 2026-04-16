@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield, Users, ClipboardList } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
 import { EditorialChecklist } from '../components/EditorialChecklist';
 import { AutoGeneratorPanel } from '../components/AutoGeneratorPanel';
 import { UnsplashModal } from '../components/UnsplashModal';
 import { ShareModal } from '../components/ShareModal';
+import { AIDraftsReview } from '../components/AIDraftsReview';
+import { RoleManager } from '../components/RoleManager';
+import { GoogleTrendsWidget } from '../components/GoogleTrendsWidget';
 import { useAuth } from '../context/AuthContext';
+import { useRoles } from '../hooks/useRoles';
 import { useTagGenerator } from '../hooks/useTagGenerator';
 import { useBreakingNewsDetector } from '../hooks/useBreakingNewsDetector';
 import { useInternalLinkSuggester } from '../hooks/useInternalLinkSuggester';
@@ -18,7 +22,7 @@ import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
 import MDEditor from '@uiw/react-md-editor';
 
-type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator';
+type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator' | 'ai-drafts' | 'roles';
 
 interface ArticleForm {
   title: string;
@@ -75,12 +79,14 @@ export function AdminPage() {
     window.dispatchEvent(new Event('popstate'));
   };
 
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
+  const { isAdmin: rbacAdmin, isEditor, isWriter } = useRoles();
+  const isAdmin = rbacAdmin || user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
+  const canAccess = isAdmin || isEditor || isWriter;
 
   useEffect(() => {
-    if (!isAdmin) { navigate('/'); return; }
+    if (!canAccess) { navigate('/'); return; }
     loadData();
-  }, [isAdmin]);
+  }, [canAccess]);
 
   const loadData = async () => {
     setLoading(true);
@@ -220,7 +226,7 @@ export function AdminPage() {
     else toast.success(`Found ${results.length} link suggestions!`);
   };
 
-  if (!isAdmin) return null;
+  if (!canAccess) return null;
   if (loading) return <LoadingSpinner fullPage />;
 
   // Editor view
@@ -469,12 +475,16 @@ export function AdminPage() {
     );
   }
 
-  const tabs = [
-    { id: 'articles' as const, label: 'Articles', icon: FileText },
-    { id: 'comments' as const, label: 'Comments', icon: MessageSquare },
-    { id: 'ai-generator' as const, label: 'AI Generator', icon: Bot },
-    { id: 'stats' as const, label: 'Stats', icon: BarChart3 },
+  const tabs: { id: AdminTab; label: string; icon: any; adminOnly?: boolean }[] = [
+    { id: 'articles', label: 'Articles', icon: FileText },
+    { id: 'ai-drafts', label: 'AI Drafts', icon: ClipboardList },
+    { id: 'comments', label: 'Comments', icon: MessageSquare },
+    { id: 'ai-generator', label: 'AI Generator', icon: Bot },
+    { id: 'stats', label: 'Stats', icon: BarChart3 },
+    { id: 'roles', label: 'Roles', icon: Users, adminOnly: true },
   ];
+
+  const visibleTabs = tabs.filter(t => !t.adminOnly || isAdmin);
 
   return (
     <div className="min-h-screen bg-background">
@@ -494,10 +504,10 @@ export function AdminPage() {
           )}
         </div>
 
-        <div className="flex gap-1 mb-8 border-b border-border">
-          {tabs.map(t => (
+        <div className="flex gap-1 mb-8 border-b border-border overflow-x-auto">
+          {visibleTabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                 tab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}>
               <t.icon className="h-4 w-4" /> {t.label}
@@ -632,7 +642,23 @@ export function AdminPage() {
         )}
 
         {tab === 'ai-generator' && (
-          <AutoGeneratorPanel />
+          <div className="space-y-8">
+            <AutoGeneratorPanel />
+            <div className="p-4 bg-card border border-border rounded-lg">
+              <GoogleTrendsWidget onGenerate={(topic) => {
+                setForm(prev => ({ ...prev, title: topic, slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }));
+                setShowEditor(true);
+              }} />
+            </div>
+          </div>
+        )}
+
+        {tab === 'ai-drafts' && (
+          <AIDraftsReview />
+        )}
+
+        {tab === 'roles' && isAdmin && (
+          <RoleManager />
         )}
       </main>
 

@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Users, FileText, MessageSquare, Activity, ArrowLeft, Eye } from 'lucide-react';
+import { BarChart3, Users, FileText, MessageSquare, Activity, ArrowLeft, Eye, Clock, TrendingUp, Globe, Smartphone, Monitor } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner } from '../components';
 import { useAuth } from '../context/AuthContext';
+import { useRoles } from '../hooks/useRoles';
 import { getCategories } from '../lib/api';
 import { fetchAnalytics, type AnalyticsData } from '../hooks/useAnalytics';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { supabase } from '../lib/supabase';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import type { Category } from '../types';
 
 const COLORS = ['hsl(160,70%,37%)', 'hsl(217,91%,60%)', 'hsl(263,70%,50%)', 'hsl(25,95%,53%)', 'hsl(340,82%,52%)', 'hsl(47,96%,53%)'];
 
 export function AnalyticsDashboard() {
   const { user } = useAuth();
+  const { isEditor } = useRoles();
   const [categories, setCategories] = useState<Category[]>([]);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scrollData, setScrollData] = useState<{ depth: string; count: number }[]>([]);
+  const [timeData, setTimeData] = useState<{ duration: string; count: number }[]>([]);
+  const [sourceData, setSourceData] = useState<{ source: string; count: number }[]>([]);
 
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
+  const isAdmin = isEditor || user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
 
   const navigate = (path: string) => {
     history.pushState(null, '', path);
@@ -33,6 +39,43 @@ export function AnalyticsDashboard() {
     const [cats, analytics] = await Promise.all([getCategories(), fetchAnalytics()]);
     setCategories(cats);
     setData(analytics);
+
+    // Fetch advanced analytics
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+    const { data: events } = await supabase
+      .from('analytics_events')
+      .select('event_type')
+      .gte('created_at', thirtyDaysAgo);
+
+    if (events) {
+      // Scroll depth breakdown
+      const scrollCounts = { '25%': 0, '50%': 0, '75%': 0, '100%': 0 };
+      const timeCounts = { '30s': 0, '60s': 0, '2m': 0, '5m': 0 };
+      const sourceCounts = new Map<string, number>();
+
+      events.forEach(e => {
+        if (e.event_type === 'scroll_depth_25') scrollCounts['25%']++;
+        if (e.event_type === 'scroll_depth_50') scrollCounts['50%']++;
+        if (e.event_type === 'scroll_depth_75') scrollCounts['75%']++;
+        if (e.event_type === 'scroll_depth_100') scrollCounts['100%']++;
+        if (e.event_type === 'time_on_page_30s') timeCounts['30s']++;
+        if (e.event_type === 'time_on_page_60s') timeCounts['60s']++;
+        if (e.event_type === 'time_on_page_120s') timeCounts['2m']++;
+        if (e.event_type === 'time_on_page_300s') timeCounts['5m']++;
+        if (e.event_type.startsWith('source_')) {
+          const src = e.event_type.replace('source_', '');
+          sourceCounts.set(src, (sourceCounts.get(src) || 0) + 1);
+        }
+      });
+
+      setScrollData(Object.entries(scrollCounts).map(([depth, count]) => ({ depth, count })));
+      setTimeData(Object.entries(timeCounts).map(([duration, count]) => ({ duration, count })));
+      setSourceData(Array.from(sourceCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([source, count]) => ({ source, count })));
+    }
+
     setLoading(false);
   };
 
@@ -74,23 +117,21 @@ export function AnalyticsDashboard() {
           ))}
         </div>
 
-        {/* Charts */}
+        {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Views per day */}
           <div className="p-5 bg-card border border-border rounded-lg">
             <h3 className="text-sm font-semibold text-foreground mb-4">Views per Day (14d)</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.viewsPerDay}>
+              <AreaChart data={data.viewsPerDay}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
-                <Line type="monotone" dataKey="views" stroke="hsl(160,70%,37%)" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Area type="monotone" dataKey="views" stroke="hsl(160,70%,37%)" fill="hsl(160,70%,37%)" fillOpacity={0.1} strokeWidth={2} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Top articles */}
           <div className="p-5 bg-card border border-border rounded-lg">
             <h3 className="text-sm font-semibold text-foreground mb-4">Top 5 Articles</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -103,8 +144,66 @@ export function AnalyticsDashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
 
-          {/* Category breakdown */}
+        {/* Charts Row 2 — Advanced Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Scroll Depth */}
+          <div className="p-5 bg-card border border-border rounded-lg">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> Scroll Depth
+            </h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={scrollData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="depth" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="count" fill="hsl(263,70%,50%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Time on Page */}
+          <div className="p-5 bg-card border border-border rounded-lg">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" /> Time on Page
+            </h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={timeData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="duration" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="count" fill="hsl(25,95%,53%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Traffic Sources */}
+          <div className="p-5 bg-card border border-border rounded-lg">
+            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" /> Traffic Sources
+            </h3>
+            {sourceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={sourceData} dataKey="count" nameKey="source" cx="50%" cy="50%" outerRadius={70} label={(entry: any) => `${entry.source}: ${entry.count}`}>
+                    {sourceData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-12">No traffic source data yet.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Charts Row 3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="p-5 bg-card border border-border rounded-lg">
             <h3 className="text-sm font-semibold text-foreground mb-4">Articles by Category</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -119,7 +218,6 @@ export function AnalyticsDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Device breakdown */}
           <div className="p-5 bg-card border border-border rounded-lg">
             <h3 className="text-sm font-semibold text-foreground mb-4">Device Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
