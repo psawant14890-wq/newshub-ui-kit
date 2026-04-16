@@ -19,6 +19,7 @@ import { AdminPage } from './pages/AdminPage';
 import { RSSFeed } from './pages/RSSFeed';
 import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 import { Sitemap } from './pages/Sitemap';
+import { WriterDashboard } from './components/WriterDashboard';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -50,6 +51,7 @@ function AppContent() {
   if (route === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
   if (route === '/admin') return <ProtectedRoute><AdminPage /></ProtectedRoute>;
   if (route === '/admin/analytics') return <ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>;
+  if (route === '/writer') return <ProtectedRoute><WriterDashboard /></ProtectedRoute>;
   if (route === '/about') return <AboutPage />;
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;
