@@ -20,6 +20,9 @@ import { RSSFeed } from './pages/RSSFeed';
 import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 import { Sitemap } from './pages/Sitemap';
 import { WriterDashboard } from './components/WriterDashboard';
+import { WriterApplication } from './pages/WriterApplication';
+import { AuthorPage } from './pages/AuthorPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -52,6 +55,9 @@ function AppContent() {
   if (route === '/admin') return <ProtectedRoute><AdminPage /></ProtectedRoute>;
   if (route === '/admin/analytics') return <ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>;
   if (route === '/writer') return <ProtectedRoute><WriterDashboard /></ProtectedRoute>;
+  if (route === '/become-writer') return <ProtectedRoute><WriterApplication /></ProtectedRoute>;
+  if (route === '/notifications') return <ProtectedRoute><NotificationsPage /></ProtectedRoute>;
+  if (route.startsWith('/author/')) return <AuthorPage id={route.replace('/author/', '')} />;
   if (route === '/about') return <AboutPage />;
   if (route === '/editorial-policy') return <EditorialPolicyPage />;
   if (route === '/privacy') return <PrivacyPage />;

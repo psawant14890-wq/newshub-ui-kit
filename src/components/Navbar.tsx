@@ -3,6 +3,7 @@ import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SearchBar } from './SearchBar';
+import { NotificationBell } from './NotificationBell';
 import toast from 'react-hot-toast';
 import type { Category } from '../types';
 
@@ -115,6 +116,9 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
               >
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
+
+              {/* Notification Bell */}
+              {user && <NotificationBell />}
 
               {/* User / Login */}
               {user ? (

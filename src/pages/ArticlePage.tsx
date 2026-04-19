@@ -3,6 +3,10 @@ import { Tag as TagIcon, Bookmark, Send, Heart, ChevronRight, Home } from 'lucid
 import { Navbar, ArticleCard, Footer, Sidebar, ShareButtons, CommentCard, CategoryBadge, AuthorMeta, LoadingSpinner, EmptyState } from '../components';
 import { FakeNewsDetector } from '../components/FakeNewsDetector';
 import { BiasDetector } from '../components/BiasDetector';
+import { ArticleSummarizer } from '../components/ArticleSummarizer';
+import { TextToSpeech } from '../components/TextToSpeech';
+import { QuoteExtractor } from '../components/QuoteExtractor';
+import { ReactionBar } from '../components/ReactionBar';
 import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews, addComment } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useBookmark } from '../hooks/useBookmark';
@@ -194,7 +198,16 @@ export function ArticlePage({ slug }: ArticlePageProps) {
               </div>
             )}
 
-            <div className="article-content prose max-w-none text-foreground mb-8" dangerouslySetInnerHTML={{ __html: article.content }} />
+            <div className="flex flex-wrap gap-3 mb-4">
+              <ArticleSummarizer slug={slug} body={article.content} />
+              <TextToSpeech text={article.content} />
+            </div>
+
+            <div className="article-content prose max-w-none text-foreground mb-4" dangerouslySetInnerHTML={{ __html: article.content }} />
+
+            <QuoteExtractor slug={slug} title={article.title} body={article.content} />
+
+            <ReactionBar articleSlug={slug} />
 
             {/* AI Analysis Buttons */}
             <div className="flex flex-wrap gap-3 mb-8 py-4 border-t border-border">
