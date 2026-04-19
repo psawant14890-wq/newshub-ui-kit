@@ -3,6 +3,7 @@ import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SearchBar } from './SearchBar';
+import { NotificationBell } from './NotificationBell';
 import toast from 'react-hot-toast';
 import type { Category } from '../types';
 
