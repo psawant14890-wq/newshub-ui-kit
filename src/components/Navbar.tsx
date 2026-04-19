@@ -116,6 +116,9 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
 
+              {/* Notification Bell */}
+              {user && <NotificationBell />}
+
               {/* User / Login */}
               {user ? (
                 <div className="relative" ref={userMenuRef}>
