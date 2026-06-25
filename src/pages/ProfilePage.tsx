@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings, Bookmark, History, Trash2, BookmarkX, Clock, Lock } from 'lucide-react';
+import { Settings, Bookmark, History, Trash2, BookmarkX, Clock, Lock, Award } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, Modal, LoadingSpinner, EmptyState } from '../components';
+import { BadgeDisplay } from '../components/BadgeDisplay';
+import { PointsDisplay } from '../components/PointsDisplay';
+import { useBadges } from '../hooks/useBadges';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getCategories, getRecentArticles } from '../lib/api';
@@ -10,10 +13,11 @@ import type { Article, Category } from '../types';
 export function ProfilePage() {
   const { user, signOut } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeTab, setActiveTab] = useState<'saved' | 'history' | 'settings'>('saved');
+  const [activeTab, setActiveTab] = useState<'saved' | 'history' | 'achievements' | 'settings'>('saved');
   const [articles, setArticles] = useState<Article[]>([]);
   const [savedArticles, setSavedArticles] = useState<Article[]>([]);
   const [historyArticles, setHistoryArticles] = useState<Article[]>([]);
+  const { badges, allBadges, points } = useBadges(user?.id);
   const [settings, setSettings] = useState({ name: '', email: '', newPassword: '', confirmPassword: '' });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -26,7 +30,7 @@ export function ProfilePage() {
     // Check URL for tab parameter
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'saved' || tab === 'history' || tab === 'settings') {
+    if (tab === 'saved' || tab === 'history' || tab === 'achievements' || tab === 'settings') {
       setActiveTab(tab);
     }
   }, []);
