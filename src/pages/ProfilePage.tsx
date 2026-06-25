@@ -132,6 +132,7 @@ export function ProfilePage() {
   const tabs = [
     { id: 'saved' as const, label: 'Saved Articles', icon: Bookmark },
     { id: 'history' as const, label: 'Reading History', icon: History },
+    { id: 'achievements' as const, label: 'Achievements', icon: Award },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
   ];
 
@@ -156,6 +157,11 @@ export function ProfilePage() {
               <p className="text-xs text-muted-foreground">Joined {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
             )}
           </div>
+        </div>
+
+        {/* Points / Badges summary */}
+        <div className="mb-8">
+          <PointsDisplay points={points} badgeCount={badges.length} />
         </div>
 
         {/* Tabs */}
@@ -195,6 +201,15 @@ export function ProfilePage() {
           ) : (
             <EmptyState icon={Clock} title="No reading history" description="Articles you read will appear here." />
           )
+        )}
+
+        {activeTab === 'achievements' && (
+          <div className="p-6 bg-card border border-border rounded-lg">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" /> Your Badges
+            </h3>
+            <BadgeDisplay earned={badges} catalog={allBadges} currentPoints={points} />
+          </div>
         )}
 
         {activeTab === 'settings' && (
