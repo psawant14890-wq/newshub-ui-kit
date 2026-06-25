@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper, Shield } from 'lucide-react';
+import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper, Shield, Trophy, FileEdit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SearchBar } from './SearchBar';
@@ -150,10 +150,22 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                         <User className="h-4 w-4" /> My Profile
                       </button>
                       <button
-                        onClick={() => { navigate('/profile?tab=saved'); setUserMenuOpen(false); }}
+                        onClick={() => { navigate('/reading-list'); setUserMenuOpen(false); }}
                         className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
                       >
-                        <Bookmark className="h-4 w-4" /> Saved Articles
+                        <Bookmark className="h-4 w-4" /> Reading List
+                      </button>
+                      <button
+                        onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
+                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                      >
+                        <FileEdit className="h-4 w-4" /> Editor Dashboard
+                      </button>
+                      <button
+                        onClick={() => { navigate('/leaderboard'); setUserMenuOpen(false); }}
+                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                      >
+                        <Trophy className="h-4 w-4" /> Leaderboard
                       </button>
                       <button
                         onClick={() => { navigate('/profile?tab=settings'); setUserMenuOpen(false); }}

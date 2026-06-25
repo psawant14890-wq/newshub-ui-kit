@@ -7,7 +7,7 @@ import { AutoGeneratorPanel } from '../components/AutoGeneratorPanel';
 import { UnsplashModal } from '../components/UnsplashModal';
 import { ShareModal } from '../components/ShareModal';
 import { AIDraftsReview } from '../components/AIDraftsReview';
-import { RoleManager } from '../components/RoleManager';
+import { UserManagementEnhanced } from '../components/UserManagementEnhanced';
 import { GoogleTrendsWidget } from '../components/GoogleTrendsWidget';
 import { useAuth } from '../context/AuthContext';
 import { useRoles } from '../hooks/useRoles';
@@ -658,7 +658,7 @@ export function AdminPage() {
         )}
 
         {tab === 'roles' && isAdmin && (
-          <RoleManager />
+          <UserManagementEnhanced />
         )}
       </main>
 

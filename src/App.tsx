@@ -23,6 +23,9 @@ import { WriterDashboard } from './components/WriterDashboard';
 import { WriterApplication } from './pages/WriterApplication';
 import { AuthorPage } from './pages/AuthorPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { ReadingListPage } from './pages/ReadingListPage';
+import { EditorDashboard } from './pages/EditorDashboard';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -55,6 +58,9 @@ function AppContent() {
   if (route === '/admin') return <ProtectedRoute><AdminPage /></ProtectedRoute>;
   if (route === '/admin/analytics') return <ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>;
   if (route === '/writer') return <ProtectedRoute><WriterDashboard /></ProtectedRoute>;
+  if (route === '/editor') return <ProtectedRoute><EditorDashboard /></ProtectedRoute>;
+  if (route === '/reading-list' || route === '/saved') return <ProtectedRoute><ReadingListPage /></ProtectedRoute>;
+  if (route === '/leaderboard') return <LeaderboardPage />;
   if (route === '/become-writer') return <ProtectedRoute><WriterApplication /></ProtectedRoute>;
   if (route === '/notifications') return <ProtectedRoute><NotificationsPage /></ProtectedRoute>;
   if (route.startsWith('/author/')) return <AuthorPage id={route.replace('/author/', '')} />;
