@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, X, SearchX, AlertTriangle } from 'lucide-react';
 import { Navbar, ArticleCard, Footer, EmptyState, Pagination } from '../components';
-import { getCategories, searchArticles, getRecentArticles } from '../lib/api';
+import { getCategories, searchArticles, getRecentArticles, semanticSearch } from '../lib/api';
 import type { Article, Category } from '../types';
 
 interface SearchPageProps {
