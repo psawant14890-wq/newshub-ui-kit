@@ -17,3 +17,5 @@ export { BreakingNewsTicker } from './BreakingNewsTicker';
 export { CategorySection } from './CategorySection';
 export { Newsletter } from './Newsletter';
 export { ProtectedRoute } from './ProtectedRoute';
+export { AskNewsHub } from './AskNewsHub';
+export { LiveFeedBanner } from './LiveFeedBanner';

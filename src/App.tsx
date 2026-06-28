@@ -26,6 +26,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ReadingListPage } from './pages/ReadingListPage';
 import { EditorDashboard } from './pages/EditorDashboard';
+import { AskPage } from './pages/AskPage';
+import { LiveFeedBanner } from './components/LiveFeedBanner';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -80,6 +82,7 @@ function App() {
         <ToastProvider>
           <AppContent />
           <AIChatbot />
+          <LiveFeedBanner />
           <ToastContainer />
           <Toaster
             position="top-right"
