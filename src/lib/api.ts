@@ -699,3 +699,101 @@ export async function deleteArticle(id: string): Promise<boolean> {
 }
 
 export { mockArticles, mockCategories, mockAuthors, mockTags };
+
+// ============================================================
+// GenAI: Semantic Search + RAG Q&A (via Supabase Edge Functions)
+// ============================================================
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+export interface SemanticHit {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  thumbnail: string | null;
+  category: string | null;
+  author_name: string | null;
+  published_at: string;
+  views: number;
+  similarity: number;
+  final_score: number;
+}
+
+export async function semanticSearch(query: string, k = 10): Promise<SemanticHit[]> {
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/semantic-search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': ANON_KEY,
+        'Authorization': `Bearer ${ANON_KEY}`,
+      },
+      body: JSON.stringify({ query, k }),
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.results ?? [];
+  } catch (e) {
+    console.error('semanticSearch failed:', e);
+    return [];
+  }
+}
+
+export interface RagSource {
+  article_id: string;
+  title: string;
+  slug: string;
+  similarity: number;
+}
+
+export interface RagCallbacks {
+  onCitations?: (sources: RagSource[]) => void;
+  onToken?: (token: string) => void;
+  onDone?: () => void;
+  onError?: (msg: string) => void;
+}
+
+export async function ragAsk(question: string, cb: RagCallbacks): Promise<void> {
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/rag-qa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': ANON_KEY,
+        'Authorization': `Bearer ${ANON_KEY}`,
+      },
+      body: JSON.stringify({ question }),
+    });
+    if (!res.ok || !res.body) {
+      cb.onError?.(`RAG request failed: ${res.status}`);
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+      for (const evt of events) {
+        const line = evt.split('\n').find((l) => l.startsWith('data:'));
+        if (!line) continue;
+        try {
+          const data = JSON.parse(line.slice(5).trim());
+          if (data.type === 'citations') cb.onCitations?.(data.sources ?? []);
+          else if (data.type === 'token') cb.onToken?.(data.content ?? '');
+          else if (data.type === 'done') cb.onDone?.();
+          else if (data.type === 'error') cb.onError?.(data.message ?? 'stream error');
+        } catch {
+          // skip
+        }
+      }
+    }
+    cb.onDone?.();
+  } catch (e) {
+    cb.onError?.(String(e));
+  }
+}

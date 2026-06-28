@@ -26,6 +26,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ReadingListPage } from './pages/ReadingListPage';
 import { EditorDashboard } from './pages/EditorDashboard';
+import { AskPage } from './pages/AskPage';
+import { LiveFeedBanner } from './components/LiveFeedBanner';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -70,6 +72,7 @@ function AppContent() {
   if (route === '/terms') return <TermsPage />;
   if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
   if (route === '/sitemap.xml' || route === '/sitemap') return <Sitemap />;
+  if (route === '/ask') return <AskPage />;
   return <NotFoundPage />;
 }
 
@@ -80,6 +83,7 @@ function App() {
         <ToastProvider>
           <AppContent />
           <AIChatbot />
+          <LiveFeedBanner />
           <ToastContainer />
           <Toaster
             position="top-right"

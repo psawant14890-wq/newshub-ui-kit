@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { Navbar, ArticleCard, Footer, Sidebar, BreakingNewsTicker, CategorySection, Newsletter, SkeletonCard, EmptyState } from '../components';
+import { Navbar, ArticleCard, Footer, Sidebar, BreakingNewsTicker, CategorySection, Newsletter, SkeletonCard, EmptyState, AskNewsHub } from '../components';
 import { useRecommendations } from '../hooks/useRecommendations';
 import {
   getCategories, getFeaturedArticle, getBreakingNews,
@@ -76,6 +76,10 @@ export function HomePage() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">
+            <section className="mb-10">
+              <AskNewsHub />
+            </section>
+
             {featuredArticle && (
               <section className="mb-10">
                 <ArticleCard article={featuredArticle} variant="featured" />
