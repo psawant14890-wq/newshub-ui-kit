@@ -35,7 +35,19 @@ export function SearchPage({ query = '' }: SearchPageProps) {
     try {
       let articles: Article[];
       if (searchQuery.trim()) {
-        articles = await searchArticles(searchQuery);
+        // Try semantic search first; fall back to keyword search
+        const hits = await semanticSearch(searchQuery, 20);
+        if (hits.length > 0) {
+          const ids = hits.map(h => h.id);
+          const keyword = await searchArticles(searchQuery);
+          // Reorder keyword results by semantic ranking; append any extras
+          const byId = new Map(keyword.map(a => [a.id, a]));
+          articles = ids.map(id => byId.get(id)).filter(Boolean) as Article[];
+          for (const a of keyword) if (!ids.includes(a.id)) articles.push(a);
+          if (articles.length === 0) articles = keyword;
+        } else {
+          articles = await searchArticles(searchQuery);
+        }
       } else {
         articles = await getRecentArticles(50);
       }
