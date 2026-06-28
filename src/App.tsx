@@ -72,6 +72,7 @@ function AppContent() {
   if (route === '/terms') return <TermsPage />;
   if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
   if (route === '/sitemap.xml' || route === '/sitemap') return <Sitemap />;
+  if (route === '/ask') return <AskPage />;
   return <NotFoundPage />;
 }
 
