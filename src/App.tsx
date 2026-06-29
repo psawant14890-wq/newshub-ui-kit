@@ -74,6 +74,7 @@ function AppContent() {
   if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
   if (route === '/sitemap.xml' || route === '/sitemap') return <Sitemap />;
   if (route === '/ask') return <AskPage />;
+  if (route === '/setup-admin') return <ProtectedRoute><SetupAdminPage /></ProtectedRoute>;
   return <NotFoundPage />;
 }
 
