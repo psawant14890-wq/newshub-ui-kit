@@ -28,6 +28,7 @@ import { ReadingListPage } from './pages/ReadingListPage';
 import { EditorDashboard } from './pages/EditorDashboard';
 import { AskPage } from './pages/AskPage';
 import { LiveFeedBanner } from './components/LiveFeedBanner';
+import { SetupAdminPage } from './pages/SetupAdminPage';
 
 function AppContent() {
   const [route, setRoute] = useState(window.location.pathname);
@@ -73,6 +74,7 @@ function AppContent() {
   if (route === '/rss.xml' || route === '/rss') return <RSSFeed />;
   if (route === '/sitemap.xml' || route === '/sitemap') return <Sitemap />;
   if (route === '/ask') return <AskPage />;
+  if (route === '/setup-admin') return <ProtectedRoute><SetupAdminPage /></ProtectedRoute>;
   return <NotFoundPage />;
 }
 
