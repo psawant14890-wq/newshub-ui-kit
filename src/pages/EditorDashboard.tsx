@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { FileText, Eye, Edit3, Trash2, Plus, BarChart3, Clock, Sparkles, Zap, Award } from 'lucide-react';
+import { FileText, Eye, Edit3, Trash2, Plus, BarChart3, Clock, Sparkles, Zap, Award, Wand2 } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, EmptyState } from '../components';
 import { BadgeDisplay } from '../components/BadgeDisplay';
+import { AIRewriteSuggestions } from '../components/AIRewriteSuggestions';
+import { SchedulePublish } from '../components/SchedulePublish';
 import { useAuth } from '../context/AuthContext';
 import { useRoles } from '../hooks/useRoles';
 import { useBadges } from '../hooks/useBadges';
@@ -18,9 +20,11 @@ interface MyArticle {
   status: string;
   views: number;
   created_at: string;
+  content?: string;
+  scheduled_at?: string | null;
 }
 
-type Tab = 'articles' | 'drafts' | 'analytics' | 'badges';
+type Tab = 'articles' | 'drafts' | 'analytics' | 'badges' | 'tools';
 
 export function EditorDashboard() {
   const { user } = useAuth();
@@ -45,7 +49,7 @@ export function EditorDashboard() {
       const [cats, { data }, { count: fc }, { count: rc }] = await Promise.all([
         getCategories(),
         supabase.from('articles')
-          .select('id, title, slug, category, status, views, created_at')
+          .select('id, title, slug, category, status, views, created_at, content')
           .eq('author_id', user.id)
           .order('created_at', { ascending: false }),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id),
@@ -130,6 +134,7 @@ export function EditorDashboard() {
           {([
             { id: 'articles', label: `Published (${published.length})` },
             { id: 'drafts',   label: `Drafts (${drafts.length})` },
+            { id: 'tools',    label: 'AI Tools & Schedule' },
             { id: 'analytics',label: 'Analytics' },
             { id: 'badges',   label: `Badges (${badges.length})` },
           ] as { id: Tab; label: string }[]).map(t => (
@@ -212,6 +217,37 @@ export function EditorDashboard() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Badges earned</span><span className="text-foreground font-medium">{badges.length} / {allBadges.length}</span></div>
               </div>
             </div>
+          </div>
+        )}
+
+        {tab === 'tools' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Wand2 className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-foreground">AI rewrite & scheduled publishing</h3>
+            </div>
+            {articles.length === 0 ? (
+              <EmptyState icon={FileText} title="No articles yet" description="Create an article first, then use AI tools on it." />
+            ) : (
+              articles.slice(0, 5).map(a => (
+                <details key={a.id} className="bg-card border border-border rounded-lg">
+                  <summary className="cursor-pointer p-4 flex items-center justify-between">
+                    <span className="font-medium text-foreground truncate">{a.title}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${a.status === 'published' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-600'}`}>{a.status}</span>
+                  </summary>
+                  <div className="p-4 pt-0 space-y-4">
+                    <AIRewriteSuggestions
+                      content={a.content || ''}
+                      onApply={async (rewritten) => {
+                        const ok = await updateArticle(a.id, { content: rewritten });
+                        if (ok) setArticles(prev => prev.map(x => x.id === a.id ? { ...x, content: rewritten } : x));
+                      }}
+                    />
+                    <SchedulePublish articleId={a.id} currentScheduledAt={a.scheduled_at} />
+                  </div>
+                </details>
+              ))
+            )}
           </div>
         )}
 

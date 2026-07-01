@@ -7,6 +7,9 @@ import { ArticleSummarizer } from '../components/ArticleSummarizer';
 import { TextToSpeech } from '../components/TextToSpeech';
 import { QuoteExtractor } from '../components/QuoteExtractor';
 import { ReactionBar } from '../components/ReactionBar';
+import { ArticleHighlighter } from '../components/ArticleHighlighter';
+import { ShareCardGenerator } from '../components/ShareCardGenerator';
+import { TranslateArticle } from '../components/TranslateArticle';
 import { getCategories, getArticleBySlug, getArticleTags, getRelatedArticles, getArticleComments, incrementArticleViews, addComment } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useBookmark } from '../hooks/useBookmark';
@@ -201,6 +204,9 @@ export function ArticlePage({ slug }: ArticlePageProps) {
             <div className="flex flex-wrap gap-3 mb-4">
               <ArticleSummarizer slug={slug} body={article.content} />
               <TextToSpeech text={article.content} />
+              <TranslateArticle title={article.title} body={article.content} />
+              <ArticleHighlighter slug={slug} />
+              <ShareCardGenerator title={article.title} excerpt={article.excerpt} author={article.author?.name} />
             </div>
 
             <div className="article-content prose max-w-none text-foreground mb-4" dangerouslySetInnerHTML={{ __html: article.content }} />
