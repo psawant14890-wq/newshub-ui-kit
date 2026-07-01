@@ -22,7 +22,7 @@ import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
 import MDEditor from '@uiw/react-md-editor';
 
-type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator' | 'ai-drafts' | 'roles';
+type AdminTab = 'overview' | 'articles' | 'comments' | 'stats' | 'ai-generator' | 'ai-drafts' | 'roles' | 'settings';
 
 interface ArticleForm {
   title: string;
