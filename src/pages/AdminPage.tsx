@@ -52,7 +52,7 @@ const emptyForm: ArticleForm = {
 
 export function AdminPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<AdminTab>('articles');
+  const [tab, setTab] = useState<AdminTab>('overview');
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
