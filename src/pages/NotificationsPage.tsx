@@ -1,5 +1,6 @@
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { Navbar, Footer, EmptyState, LoadingSpinner } from '../components';
+import { PushNotificationToggle } from '../components/PushNotificationToggle';
 import { useNotifications } from '../hooks/useNotifications';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -40,6 +41,7 @@ export function NotificationsPage() {
             </button>
           )}
         </div>
+        <div className="mb-6"><PushNotificationToggle /></div>
         {loading ? <LoadingSpinner /> : notifications.length === 0 ? (
           <EmptyState icon={Bell} title="No notifications" description="You're all caught up!" />
         ) : (
