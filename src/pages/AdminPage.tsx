@@ -763,7 +763,29 @@ export function AdminPage() {
         {tab === 'roles' && isAdmin && (
           <UserManagementEnhanced />
         )}
-      </main>
+
+        {tab === 'settings' && isAdmin && (
+          <div className="max-w-2xl space-y-4">
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Analytics Dashboard</h3>
+              <p className="text-xs text-muted-foreground mb-3">Deep-dive traffic, engagement, and referral analytics.</p>
+              <button onClick={() => navigate('/admin/analytics')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Analytics →</button>
+            </div>
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Editor Dashboard</h3>
+              <p className="text-xs text-muted-foreground mb-3">Writer-focused view with badges and performance stats.</p>
+              <button onClick={() => navigate('/editor')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Editor →</button>
+            </div>
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Setup Admin</h3>
+              <p className="text-xs text-muted-foreground mb-3">One-click admin bootstrap page.</p>
+              <button onClick={() => navigate('/setup-admin')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Setup →</button>
+            </div>
+          </div>
+        )}
+        </main>
+      </div>
+
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Article" size="sm">
         <p className="text-sm text-muted-foreground mb-6">Are you sure you want to delete "{deleteTarget?.title}"? This action cannot be undone.</p>
