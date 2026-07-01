@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield, Users, ClipboardList } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield, Users, ClipboardList, LayoutDashboard, Settings as SettingsIcon, CheckCircle2, Flag } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
 import { EditorialChecklist } from '../components/EditorialChecklist';
@@ -22,7 +22,7 @@ import toast from 'react-hot-toast';
 import type { Article, Category } from '../types';
 import MDEditor from '@uiw/react-md-editor';
 
-type AdminTab = 'articles' | 'comments' | 'stats' | 'ai-generator' | 'ai-drafts' | 'roles';
+type AdminTab = 'overview' | 'articles' | 'comments' | 'stats' | 'ai-generator' | 'ai-drafts' | 'roles' | 'settings';
 
 interface ArticleForm {
   title: string;
@@ -52,7 +52,7 @@ const emptyForm: ArticleForm = {
 
 export function AdminPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<AdminTab>('articles');
+  const [tab, setTab] = useState<AdminTab>('overview');
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -475,45 +475,148 @@ export function AdminPage() {
     );
   }
 
-  const tabs: { id: AdminTab; label: string; icon: any; adminOnly?: boolean }[] = [
-    { id: 'articles', label: 'Articles', icon: FileText },
-    { id: 'ai-drafts', label: 'AI Drafts', icon: ClipboardList },
-    { id: 'comments', label: 'Comments', icon: MessageSquare },
-    { id: 'ai-generator', label: 'AI Generator', icon: Bot },
-    { id: 'stats', label: 'Stats', icon: BarChart3 },
-    { id: 'roles', label: 'Roles', icon: Users, adminOnly: true },
+  const navGroups: { label: string; items: { id: AdminTab; label: string; icon: any; adminOnly?: boolean }[] }[] = [
+    { label: 'Overview', items: [{ id: 'overview', label: 'Overview', icon: LayoutDashboard }] },
+    { label: 'Content', items: [
+      { id: 'articles', label: 'Articles', icon: FileText },
+      { id: 'ai-drafts', label: 'AI Drafts', icon: ClipboardList },
+      { id: 'comments', label: 'Comments', icon: MessageSquare },
+    ]},
+    { label: 'Users', items: [{ id: 'roles', label: 'Roles & Users', icon: Users, adminOnly: true }] },
+    { label: 'AI', items: [{ id: 'ai-generator', label: 'AI Generator', icon: Bot }] },
+    { label: 'Settings', items: [
+      { id: 'stats', label: 'Stats', icon: BarChart3 },
+      { id: 'settings', label: 'Settings', icon: SettingsIcon, adminOnly: true },
+    ]},
   ];
 
-  const visibleTabs = tabs.filter(t => !t.adminOnly || isAdmin);
+  const publishedCount = articles.filter(a => (a as any)._status !== 'draft').length;
+  const draftCount = articles.length - publishedCount;
+  const publishedRate = articles.length > 0 ? Math.round((publishedCount / articles.length) * 100) : 0;
+  const flaggedCount = comments.filter((c: any) => c.is_flagged || c.flagged).length;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar categories={categories} />
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="font-display text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          {tab === 'articles' && (
-            <button onClick={openNewArticle} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-all">
-              <Plus className="h-4 w-4" /> New Article
-            </button>
-          )}
-          {tab === 'stats' && (
-            <button onClick={() => navigate('/admin/analytics')} className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-all text-sm">
-              <TrendingUp className="h-4 w-4" /> Full Analytics
-            </button>
-          )}
-        </div>
+      <div className="flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        <aside className="lg:w-64 lg:shrink-0 lg:border-r border-b lg:border-b-0 border-border bg-card/50 lg:min-h-[calc(100vh-64px)]">
+          <div className="p-4 lg:p-6 sticky top-0">
+            <div className="flex items-center gap-2 mb-6 px-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h2 className="font-display text-base font-bold text-foreground">Admin Panel</h2>
+            </div>
+            <nav className="space-y-4">
+              {navGroups.map(group => {
+                const items = group.items.filter(i => !i.adminOnly || isAdmin);
+                if (items.length === 0) return null;
+                return (
+                  <div key={group.label}>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1.5">{group.label}</p>
+                    <div className="space-y-0.5">
+                      {items.map(t => (
+                        <button key={t.id} onClick={() => setTab(t.id)}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-sm font-medium rounded-md transition-all ${
+                            tab === t.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                          }`}>
+                          <t.icon className="h-4 w-4 shrink-0" /> <span className="truncate">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
 
-        <div className="flex gap-1 mb-8 border-b border-border overflow-x-auto">
-          {visibleTabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                tab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}>
-              <t.icon className="h-4 w-4" /> {t.label}
-            </button>
-          ))}
-        </div>
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+          <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                {tab === 'overview' ? 'Overview' : tab === 'roles' ? 'Users & Roles' : tab === 'ai-generator' ? 'AI Generator' : tab === 'ai-drafts' ? 'AI Drafts' : tab === 'settings' ? 'Settings' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">{isAdmin ? 'Administrator' : isEditor ? 'Editor' : 'Writer'} access</p>
+            </div>
+            {tab === 'articles' && (
+              <button onClick={openNewArticle} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-all">
+                <Plus className="h-4 w-4" /> New Article
+              </button>
+            )}
+            {(tab === 'stats' || tab === 'overview') && (
+              <button onClick={() => navigate('/admin/analytics')} className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-all text-sm">
+                <TrendingUp className="h-4 w-4" /> Full Analytics
+              </button>
+            )}
+          </div>
+
+        {tab === 'overview' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 bg-card border border-border rounded-xl hover:shadow-md dark:hover:shadow-primary/5 transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary"><FileText className="h-4 w-4" /></div>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Articles</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{stats.articles}</p>
+                <p className="text-xs text-muted-foreground mt-1">{draftCount} drafts</p>
+              </div>
+              <div className="p-5 bg-card border border-border rounded-xl hover:shadow-md dark:hover:shadow-primary/5 transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400"><CheckCircle2 className="h-4 w-4" /></div>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Published</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{publishedRate}%</p>
+                <p className="text-xs text-muted-foreground mt-1">{publishedCount} live</p>
+              </div>
+              <div className="p-5 bg-card border border-border rounded-xl hover:shadow-md dark:hover:shadow-primary/5 transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive"><Flag className="h-4 w-4" /></div>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Flagged</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{flaggedCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">of {stats.comments} comments</p>
+              </div>
+              <div className="p-5 bg-card border border-border rounded-xl hover:shadow-md dark:hover:shadow-primary/5 transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400"><Eye className="h-4 w-4" /></div>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Views</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{stats.views.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">all time</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button onClick={() => setTab('articles')} className="p-4 text-left bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-accent/40 transition-all">
+                <FileText className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm font-semibold text-foreground">Manage Articles</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Create, edit, publish content</p>
+              </button>
+              <button onClick={() => setTab('ai-drafts')} className="p-4 text-left bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-accent/40 transition-all">
+                <ClipboardList className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm font-semibold text-foreground">Review AI Drafts</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Approve auto-generated posts</p>
+              </button>
+              {isAdmin && (
+                <>
+                  <button onClick={() => setTab('roles')} className="p-4 text-left bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-accent/40 transition-all">
+                    <Users className="h-5 w-5 text-primary mb-2" />
+                    <p className="text-sm font-semibold text-foreground">Users & Roles</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Assign writer, editor, admin</p>
+                  </button>
+                  <button onClick={() => setTab('ai-generator')} className="p-4 text-left bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-accent/40 transition-all">
+                    <Bot className="h-5 w-5 text-primary mb-2" />
+                    <p className="text-sm font-semibold text-foreground">AI Generator</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Auto-write from trending topics</p>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+
 
         {tab === 'articles' && (
           <div className="overflow-x-auto">
@@ -660,7 +763,29 @@ export function AdminPage() {
         {tab === 'roles' && isAdmin && (
           <UserManagementEnhanced />
         )}
-      </main>
+
+        {tab === 'settings' && isAdmin && (
+          <div className="max-w-2xl space-y-4">
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Analytics Dashboard</h3>
+              <p className="text-xs text-muted-foreground mb-3">Deep-dive traffic, engagement, and referral analytics.</p>
+              <button onClick={() => navigate('/admin/analytics')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Analytics →</button>
+            </div>
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Editor Dashboard</h3>
+              <p className="text-xs text-muted-foreground mb-3">Writer-focused view with badges and performance stats.</p>
+              <button onClick={() => navigate('/editor')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Editor →</button>
+            </div>
+            <div className="p-5 bg-card border border-border rounded-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Setup Admin</h3>
+              <p className="text-xs text-muted-foreground mb-3">One-click admin bootstrap page.</p>
+              <button onClick={() => navigate('/setup-admin')} className="text-xs font-medium px-3 py-2 border border-border rounded-lg hover:bg-accent transition-all">Open Setup →</button>
+            </div>
+          </div>
+        )}
+        </main>
+      </div>
+
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Article" size="sm">
         <p className="text-sm text-muted-foreground mb-6">Are you sure you want to delete "{deleteTarget?.title}"? This action cannot be undone.</p>
