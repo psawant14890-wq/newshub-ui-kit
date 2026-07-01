@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield, Users, ClipboardList } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, BarChart3, FileText, MessageSquare, ArrowLeft, Sparkles, Wand2, Bot, TrendingUp, Image as ImageIcon, Link2, Clock, AlertTriangle, Calendar, Shield, Users, ClipboardList, LayoutDashboard, Settings as SettingsIcon, CheckCircle2, Flag } from 'lucide-react';
 import { Navbar, Footer, LoadingSpinner, Modal } from '../components';
 import { AIWritingAssistant } from '../components/AIWritingAssistant';
 import { EditorialChecklist } from '../components/EditorialChecklist';
