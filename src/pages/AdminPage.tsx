@@ -94,10 +94,29 @@ export function AdminPage() {
       const [arts, cats] = await Promise.all([getAllArticles(), getCategories()]);
       setArticles(arts);
       setCategories(cats);
-      const { data: commentsData } = await supabase.from('comments').select('*').order('created_at', { ascending: false }).limit(50);
-      setComments(commentsData || []);
-      const totalViews = arts.reduce((sum, a) => sum + a.view_count, 0);
-      setStats({ articles: arts.length, comments: (commentsData || []).length, views: totalViews });
+
+      const [recentCommentsRes, articleStatsRes, commentsCountRes, flaggedCountRes] = await Promise.all([
+        supabase.from('comments').select('*').order('created_at', { ascending: false }).limit(50),
+        supabase.from('articles').select('status, views'),
+        supabase.from('comments').select('id', { count: 'exact', head: true }),
+        supabase.from('comments').select('id', { count: 'exact', head: true }).or('is_flagged.eq.true,flagged.eq.true'),
+      ]);
+
+      setComments(recentCommentsRes.data || []);
+
+      const articleRows = (articleStatsRes.data as Array<{ status: string; views: number | null }> | null) || [];
+      const publishedCount = articleRows.filter(a => a.status === 'published').length;
+      const draftCount = articleRows.filter(a => a.status !== 'published').length;
+      const totalViews = articleRows.reduce((sum, a) => sum + (a.views || 0), 0);
+
+      setStats({
+        articles: articleRows.length,
+        published: publishedCount,
+        drafts: draftCount,
+        comments: commentsCountRes.count || 0,
+        flagged: flaggedCountRes.error ? 0 : (flaggedCountRes.count || 0),
+        views: totalViews,
+      });
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
