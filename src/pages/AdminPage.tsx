@@ -509,10 +509,10 @@ export function AdminPage() {
     ]},
   ];
 
-  const publishedCount = articles.filter(a => (a as any)._status !== 'draft').length;
-  const draftCount = articles.length - publishedCount;
-  const publishedRate = articles.length > 0 ? Math.round((publishedCount / articles.length) * 100) : 0;
-  const flaggedCount = comments.filter((c: any) => c.is_flagged || c.flagged).length;
+  const publishedCount = stats.published;
+  const draftCount = stats.drafts;
+  const publishedRate = stats.articles > 0 ? Math.round((publishedCount / stats.articles) * 100) : 0;
+  const flaggedCount = stats.flagged;
 
   return (
     <div className="min-h-screen bg-background">
