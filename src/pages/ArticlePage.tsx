@@ -296,7 +296,7 @@ function ArticleBookmarkButton({ article }: { article: Article }) {
     <button onClick={toggleSave} disabled={loading}
       className={`p-2 rounded-lg transition-all duration-200 ${
         isSaved ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-      }`} title={isSaved ? 'Remove bookmark' : 'Save article'}>
+      }`} title={isSaved ? 'Remove bookmark' : 'Save article'} aria-label={isSaved ? 'Remove bookmark' : 'Save article'}>
       <Bookmark className="h-5 w-5" fill={isSaved ? 'currentColor' : 'none'} />
     </button>
   );
