@@ -62,7 +62,7 @@ export function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null);
   const [comments, setComments] = useState<any[]>([]);
-  const [stats, setStats] = useState({ articles: 0, comments: 0, views: 0 });
+  const [stats, setStats] = useState({ articles: 0, published: 0, drafts: 0, comments: 0, flagged: 0, views: 0 });
   const { generateTags, loading: tagsLoading } = useTagGenerator();
   const { checkBreaking, checking: breakingChecking } = useBreakingNewsDetector();
   const { suggestLinks, suggestions: linkSuggestions, loading: linksLoading } = useInternalLinkSuggester();
