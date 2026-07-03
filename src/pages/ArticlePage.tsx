@@ -234,7 +234,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
             {/* Comments */}
             <section className="border-t border-border pt-8 mb-8">
-              <h3 className="font-display text-xl font-bold text-foreground mb-6">Comments ({comments.length})</h3>
+              <h2 className="font-display text-xl font-bold text-foreground mb-6">Comments ({comments.length})</h2>
               <form onSubmit={handleAddComment} className="mb-6">
                 <textarea value={commentText} onChange={e => setCommentText(e.target.value)}
                   placeholder={user ? "Share your thoughts..." : "Sign in to comment"} rows={3}
@@ -262,7 +262,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
             {relatedArticles.length > 0 && (
               <section className="border-t border-border pt-8">
-                <h3 className="font-display text-xl font-bold text-foreground mb-6">Related Articles</h3>
+                <h2 className="font-display text-xl font-bold text-foreground mb-6">Related Articles</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {relatedArticles.map(a => (<ArticleCard key={a.id} article={a} />))}
                 </div>
