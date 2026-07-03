@@ -74,6 +74,7 @@ export function HomePage() {
       <BreakingNewsTicker articles={breakingNews} />
 
       <main className="container mx-auto px-4 py-8">
+        <h1 className="sr-only">NewsHub — Breaking News and Intelligent Reporting</h1>
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">
             <section className="mb-10">

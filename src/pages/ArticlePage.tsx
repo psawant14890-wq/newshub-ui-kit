@@ -234,7 +234,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
             {/* Comments */}
             <section className="border-t border-border pt-8 mb-8">
-              <h3 className="font-display text-xl font-bold text-foreground mb-6">Comments ({comments.length})</h3>
+              <h2 className="font-display text-xl font-bold text-foreground mb-6">Comments ({comments.length})</h2>
               <form onSubmit={handleAddComment} className="mb-6">
                 <textarea value={commentText} onChange={e => setCommentText(e.target.value)}
                   placeholder={user ? "Share your thoughts..." : "Sign in to comment"} rows={3}
@@ -262,7 +262,7 @@ export function ArticlePage({ slug }: ArticlePageProps) {
 
             {relatedArticles.length > 0 && (
               <section className="border-t border-border pt-8">
-                <h3 className="font-display text-xl font-bold text-foreground mb-6">Related Articles</h3>
+                <h2 className="font-display text-xl font-bold text-foreground mb-6">Related Articles</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {relatedArticles.map(a => (<ArticleCard key={a.id} article={a} />))}
                 </div>
@@ -283,7 +283,7 @@ function ArticleLikeButton({ slug }: { slug: string }) {
     <button onClick={toggleLike} disabled={loading}
       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200 ${
         isLiked ? 'text-destructive bg-destructive/10' : 'text-muted-foreground hover:text-destructive hover:bg-accent'
-      }`} title={isLiked ? 'Unlike' : 'Like this article'}>
+      }`} title={isLiked ? 'Unlike' : 'Like this article'} aria-label={isLiked ? 'Unlike' : 'Like this article'}>
       <Heart className={`h-5 w-5 transition-transform duration-200 ${isLiked ? 'scale-110' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
       {likesCount > 0 && <span className="text-sm font-medium">{likesCount}</span>}
     </button>
@@ -296,7 +296,7 @@ function ArticleBookmarkButton({ article }: { article: Article }) {
     <button onClick={toggleSave} disabled={loading}
       className={`p-2 rounded-lg transition-all duration-200 ${
         isSaved ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-      }`} title={isSaved ? 'Remove bookmark' : 'Save article'}>
+      }`} title={isSaved ? 'Remove bookmark' : 'Save article'} aria-label={isSaved ? 'Remove bookmark' : 'Save article'}>
       <Bookmark className="h-5 w-5" fill={isSaved ? 'currentColor' : 'none'} />
     </button>
   );
