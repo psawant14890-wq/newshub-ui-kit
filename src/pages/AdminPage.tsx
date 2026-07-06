@@ -633,6 +633,7 @@ export function AdminPage() {
                 </>
               )}
             </div>
+            <SearchConsoleMetrics />
           </div>
         )}
 
