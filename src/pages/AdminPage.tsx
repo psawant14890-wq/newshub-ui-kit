@@ -9,6 +9,7 @@ import { ShareModal } from '../components/ShareModal';
 import { AIDraftsReview } from '../components/AIDraftsReview';
 import { UserManagementEnhanced } from '../components/UserManagementEnhanced';
 import { GoogleTrendsWidget } from '../components/GoogleTrendsWidget';
+import { SearchConsoleMetrics } from '../components/SearchConsoleMetrics';
 import { useAuth } from '../context/AuthContext';
 import { useRoles } from '../hooks/useRoles';
 import { useTagGenerator } from '../hooks/useTagGenerator';
@@ -632,6 +633,7 @@ export function AdminPage() {
                 </>
               )}
             </div>
+            <SearchConsoleMetrics />
           </div>
         )}
 
