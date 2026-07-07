@@ -156,7 +156,14 @@ export function SearchConsoleMetrics() {
           <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
             <Search className="h-4 w-4 text-primary" /> Google Search Console
           </h2>
-          <p className="text-xs text-muted-foreground">Last 28 days · {SITE_URL}</p>
+          <p className="text-xs text-muted-foreground">
+            Last 28 days · {SITE_URL}
+            {lastUpdated && (
+              <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground/80">
+                · Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
+          </p>
         </div>
         <button onClick={load} disabled={loading}
           className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
@@ -164,6 +171,13 @@ export function SearchConsoleMetrics() {
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
+
+      {loading && (
+        <div className="p-6 bg-card border border-border rounded-xl flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span>Loading Search Console metrics…</span>
+        </div>
+      )}
 
       {error && errorKind === 'unverified' && (
         <GuidanceCard
