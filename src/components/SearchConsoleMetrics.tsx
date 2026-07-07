@@ -75,6 +75,15 @@ function GuidanceCard({ title, description, steps, action }: {
   );
 }
 
+function formatLastUpdated(d: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d);
+}
+
 export function SearchConsoleMetrics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +91,7 @@ export function SearchConsoleMetrics() {
   const [byDate, setByDate] = useState<Row[]>([]);
   const [byQuery, setByQuery] = useState<Row[]>([]);
   const [byPage, setByPage] = useState<Row[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -98,6 +108,7 @@ export function SearchConsoleMetrics() {
       setByDate((dRes.data?.rows ?? []) as Row[]);
       setByQuery((qRes.data?.rows ?? []) as Row[]);
       setByPage((pRes.data?.rows ?? []) as Row[]);
+      setLastUpdated(new Date());
     } catch (e: any) {
       const msg = e?.context ? await e.context.text().catch(() => e.message) : e?.message ?? 'Failed to load';
       const text = typeof msg === 'string' ? msg : JSON.stringify(msg);
