@@ -249,7 +249,7 @@ export function SearchConsoleMetrics() {
         />
       )}
 
-      {chartData.length > 0 && (
+      {!loading && chartData.length > 0 && (
         <div className="p-4 bg-card border border-border rounded-xl">
           <p className="text-sm font-semibold text-foreground mb-3">Clicks & Impressions</p>
           <ResponsiveContainer width="100%" height={220}>
@@ -266,7 +266,7 @@ export function SearchConsoleMetrics() {
         </div>
       )}
 
-      {!error && (byQuery.length > 0 || byPage.length > 0 || loading) && (
+      {!loading && !error && (byQuery.length > 0 || byPage.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="p-4 bg-card border border-border rounded-xl">
             <p className="text-sm font-semibold text-foreground mb-3">Top Queries</p>
