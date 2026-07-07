@@ -266,13 +266,11 @@ export function SearchConsoleMetrics() {
         </div>
       )}
 
-      {!loading && !error && (byQuery.length > 0 || byPage.length > 0) && (
+      {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="p-4 bg-card border border-border rounded-xl">
             <p className="text-sm font-semibold text-foreground mb-3">Top Queries</p>
-            {loading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5 animate-pulse" /> Loading…</div>
-            ) : byQuery.length === 0 ? (
+            {byQuery.length === 0 ? (
               <div className="text-xs text-muted-foreground flex items-start gap-2">
                 <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <span>No queries yet. Once users find your site through Google, top search terms will appear here.</span>
@@ -293,9 +291,7 @@ export function SearchConsoleMetrics() {
 
           <div className="p-4 bg-card border border-border rounded-xl">
             <p className="text-sm font-semibold text-foreground mb-3">Top Pages</p>
-            {loading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5 animate-pulse" /> Loading…</div>
-            ) : byPage.length === 0 ? (
+            {byPage.length === 0 ? (
               <div className="text-xs text-muted-foreground flex items-start gap-2">
                 <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <span>No page impressions yet. Submit your sitemap and request indexing to jump-start discovery.</span>
