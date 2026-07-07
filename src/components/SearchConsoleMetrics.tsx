@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -75,6 +75,15 @@ function GuidanceCard({ title, description, steps, action }: {
   );
 }
 
+function formatLastUpdated(d: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d);
+}
+
 export function SearchConsoleMetrics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +91,7 @@ export function SearchConsoleMetrics() {
   const [byDate, setByDate] = useState<Row[]>([]);
   const [byQuery, setByQuery] = useState<Row[]>([]);
   const [byPage, setByPage] = useState<Row[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -98,6 +108,7 @@ export function SearchConsoleMetrics() {
       setByDate((dRes.data?.rows ?? []) as Row[]);
       setByQuery((qRes.data?.rows ?? []) as Row[]);
       setByPage((pRes.data?.rows ?? []) as Row[]);
+      setLastUpdated(new Date());
     } catch (e: any) {
       const msg = e?.context ? await e.context.text().catch(() => e.message) : e?.message ?? 'Failed to load';
       const text = typeof msg === 'string' ? msg : JSON.stringify(msg);
@@ -145,7 +156,14 @@ export function SearchConsoleMetrics() {
           <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
             <Search className="h-4 w-4 text-primary" /> Google Search Console
           </h2>
-          <p className="text-xs text-muted-foreground">Last 28 days · {SITE_URL}</p>
+          <p className="text-xs text-muted-foreground">
+            Last 28 days · {SITE_URL}
+            {lastUpdated && (
+              <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground/80">
+                · Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
+          </p>
         </div>
         <button onClick={load} disabled={loading}
           className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
@@ -153,6 +171,13 @@ export function SearchConsoleMetrics() {
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
+
+      {loading && (
+        <div className="p-6 bg-card border border-border rounded-xl flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span>Loading Search Console metrics…</span>
+        </div>
+      )}
 
       {error && errorKind === 'unverified' && (
         <GuidanceCard
@@ -198,12 +223,12 @@ export function SearchConsoleMetrics() {
         </div>
       )}
 
-      {!error && (
+      {!loading && !error && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map(s => (
             <div key={s.label} className="p-4 bg-card border border-border rounded-xl">
               <div className={`inline-flex p-2 rounded-lg mb-2 ${s.color}`}><s.icon className="h-4 w-4" /></div>
-              <p className="text-xl font-bold text-foreground">{loading ? '—' : s.value}</p>
+              <p className="text-xl font-bold text-foreground">{s.value}</p>
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">{s.label}</p>
             </div>
           ))}
@@ -224,7 +249,7 @@ export function SearchConsoleMetrics() {
         />
       )}
 
-      {chartData.length > 0 && (
+      {!loading && chartData.length > 0 && (
         <div className="p-4 bg-card border border-border rounded-xl">
           <p className="text-sm font-semibold text-foreground mb-3">Clicks & Impressions</p>
           <ResponsiveContainer width="100%" height={220}>
@@ -241,13 +266,11 @@ export function SearchConsoleMetrics() {
         </div>
       )}
 
-      {!error && (byQuery.length > 0 || byPage.length > 0 || loading) && (
+      {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="p-4 bg-card border border-border rounded-xl">
             <p className="text-sm font-semibold text-foreground mb-3">Top Queries</p>
-            {loading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5 animate-pulse" /> Loading…</div>
-            ) : byQuery.length === 0 ? (
+            {byQuery.length === 0 ? (
               <div className="text-xs text-muted-foreground flex items-start gap-2">
                 <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <span>No queries yet. Once users find your site through Google, top search terms will appear here.</span>
@@ -268,9 +291,7 @@ export function SearchConsoleMetrics() {
 
           <div className="p-4 bg-card border border-border rounded-xl">
             <p className="text-sm font-semibold text-foreground mb-3">Top Pages</p>
-            {loading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5 animate-pulse" /> Loading…</div>
-            ) : byPage.length === 0 ? (
+            {byPage.length === 0 ? (
               <div className="text-xs text-muted-foreground flex items-start gap-2">
                 <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <span>No page impressions yet. Submit your sitemap and request indexing to jump-start discovery.</span>
