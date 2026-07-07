@@ -223,12 +223,12 @@ export function SearchConsoleMetrics() {
         </div>
       )}
 
-      {!error && (
+      {!loading && !error && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map(s => (
             <div key={s.label} className="p-4 bg-card border border-border rounded-xl">
               <div className={`inline-flex p-2 rounded-lg mb-2 ${s.color}`}><s.icon className="h-4 w-4" /></div>
-              <p className="text-xl font-bold text-foreground">{loading ? '—' : s.value}</p>
+              <p className="text-xl font-bold text-foreground">{s.value}</p>
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">{s.label}</p>
             </div>
           ))}
