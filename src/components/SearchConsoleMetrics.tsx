@@ -153,6 +153,37 @@ export function SearchConsoleMetrics() {
   const hasData = byDate.length > 0 || byQuery.length > 0 || byPage.length > 0;
   const showEmptyGuidance = !loading && !error && !hasData;
 
+  const exportCsv = useCallback(() => {
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const header = ['Query / Page', 'Clicks', 'Impressions', 'CTR', 'Position'];
+    const rows: string[] = [header.join(',')];
+
+    if (byQuery.length > 0) {
+      rows.push('Top Queries');
+      byQuery.forEach(r => {
+        rows.push([escape(r.keys[0] || ''), r.clicks, r.impressions, `${(r.ctr * 100).toFixed(2)}%`, r.position.toFixed(1)].join(','));
+      });
+    }
+
+    if (byPage.length > 0) {
+      if (byQuery.length > 0) rows.push('');
+      rows.push('Top Pages');
+      byPage.forEach(r => {
+        rows.push([escape(r.keys[0] || ''), r.clicks, r.impressions, `${(r.ctr * 100).toFixed(2)}%`, r.position.toFixed(1)].join(','));
+      });
+    }
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `search-console-metrics-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [byQuery, byPage]);
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
