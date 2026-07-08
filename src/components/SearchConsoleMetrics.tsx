@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
