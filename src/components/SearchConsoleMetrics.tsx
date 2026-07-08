@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 
 interface Row {
   keys: string[];
@@ -15,6 +15,12 @@ const SITE_URL = 'https://news-hub-89.lovable.app/';
 const GSC_PROPERTY_URL = `https://search.google.com/search-console?resource_id=${encodeURIComponent(SITE_URL)}`;
 const GSC_ADD_PROPERTY_URL = 'https://search.google.com/search-console/welcome';
 const GSC_SITEMAPS_URL = `https://search.google.com/search-console/sitemaps?resource_id=${encodeURIComponent(SITE_URL)}`;
+
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
+function cn(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
+}
 
 type ErrorKind = 'unverified' | 'forbidden' | 'auth' | 'network' | 'unknown';
 
@@ -34,30 +40,31 @@ function GuidanceCard({ title, description, steps, action }: {
   action?: { label: string; href: string };
 }) {
   return (
-    <div className="p-5 bg-card border border-border rounded-xl">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm animate-fade-up" style={{ animationDelay: '80ms' }}>
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
           <Search className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <h3 className="font-display text-lg font-semibold text-foreground">{title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
       </div>
-      <ol className="space-y-2.5 mb-4">
+      <ol className="mt-6 space-y-3">
         {steps.map((s, i) => (
           <li key={i} className="flex items-start gap-3 text-sm">
             {s.done ? (
-              <CheckCircle2 className="h-4 w-4 text-category-sports mt-0.5 shrink-0" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-category-sports" />
             ) : (
-              <div className="h-5 w-5 rounded-full border border-border flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-[10px] font-semibold text-muted-foreground">
                 {i + 1}
               </div>
             )}
             <div className="flex-1">
-              <span className="text-foreground">{s.label}</span>
+              <span className={cn('text-foreground', s.done && 'text-muted-foreground line-through')}>{s.label}</span>
               {s.href && (
-                <a href={s.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 ml-2 text-primary hover:underline text-xs">
+                <a href={s.href} target="_blank" rel="noreferrer" className="story-link ml-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
                   Open <ExternalLink className="h-3 w-3" />
                 </a>
               )}
@@ -67,7 +74,7 @@ function GuidanceCard({ title, description, steps, action }: {
       </ol>
       {action && (
         <a href={action.href} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all">
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 active:translate-y-0">
           {action.label} <ExternalLink className="h-3.5 w-3.5" />
         </a>
       )}
@@ -82,6 +89,26 @@ function formatLastUpdated(d: Date): string {
     hour: 'numeric',
     minute: '2-digit',
   }).format(d);
+}
+
+function SkeletonCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm" style={{ animationDelay: `${delay}ms` }}>
+      <div className="h-10 w-10 rounded-xl bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+      <div className="mt-4 h-7 w-20 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+      <div className="mt-2 h-3 w-24 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+    </div>
+  );
+}
+
+function SkeletonRow({ delay = 0 }: { delay?: number }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5" style={{ animationDelay: `${delay}ms` }}>
+      <div className="h-4 w-4 shrink-0 rounded-full bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+      <div className="h-4 flex-1 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+      <div className="h-4 w-20 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+    </div>
+  );
 }
 
 export function SearchConsoleMetrics() {
@@ -121,11 +148,11 @@ export function SearchConsoleMetrics() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(() => load(), 5 * 60 * 1000);
+    const interval = setInterval(() => load(), REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [load]);
 
-  const totals = byDate.reduce(
+  const totals = useMemo(() => byDate.reduce(
     (acc, r) => ({
       clicks: acc.clicks + r.clicks,
       impressions: acc.impressions + r.impressions,
@@ -133,21 +160,24 @@ export function SearchConsoleMetrics() {
       count: acc.count + 1,
     }),
     { clicks: 0, impressions: 0, position: 0, count: 0 },
-  );
+  ), [byDate]);
+
   const avgCtr = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
   const avgPos = totals.count > 0 ? totals.position / totals.count : 0;
 
-  const chartData = byDate.map(r => ({
+  const chartData = useMemo(() => byDate.map(r => ({
     date: r.keys[0],
     clicks: r.clicks,
     impressions: r.impressions,
-  }));
+  })), [byDate]);
+
+  const maxClicks = useMemo(() => Math.max(1, ...byQuery.map(r => r.clicks), ...byPage.map(r => r.clicks)), [byQuery, byPage]);
 
   const stats = [
-    { label: 'Clicks (28d)', value: totals.clicks.toLocaleString(), icon: MousePointerClick, color: 'text-primary bg-primary/10' },
-    { label: 'Impressions', value: totals.impressions.toLocaleString(), icon: Eye, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10' },
-    { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%`, icon: TrendingUp, color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
-    { label: 'Avg Position', value: avgPos.toFixed(1), icon: Search, color: 'text-orange-600 dark:text-orange-400 bg-orange-500/10' },
+    { label: 'Clicks (28d)', value: totals.clicks.toLocaleString(), icon: MousePointerClick, gradient: 'from-primary/20 to-primary/5', iconColor: 'text-primary' },
+    { label: 'Impressions', value: totals.impressions.toLocaleString(), icon: Eye, gradient: 'from-blue-500/20 to-blue-500/5', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%`, icon: TrendingUp, gradient: 'from-purple-500/20 to-purple-500/5', iconColor: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Avg Position', value: avgPos.toFixed(1), icon: Search, gradient: 'from-orange-500/20 to-orange-500/5', iconColor: 'text-orange-600 dark:text-orange-400' },
   ];
 
   const hasData = byDate.length > 0 || byQuery.length > 0 || byPage.length > 0;
@@ -185,41 +215,62 @@ export function SearchConsoleMetrics() {
   }, [byQuery, byPage]);
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-            <Search className="h-4 w-4 text-primary" /> Google Search Console
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Last 28 days · {SITE_URL}
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
+              <Search className="h-4 w-4" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-foreground">Google Search Console</h2>
+            <span className="hidden h-1.5 w-1.5 rounded-full bg-primary animate-pulse-soft sm:inline-block" aria-hidden="true" />
+          </div>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span>Last 28 days · {SITE_URL}</span>
             {lastUpdated && (
-              <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground/80">
-                · Updated {formatLastUpdated(lastUpdated)}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                Updated {formatLastUpdated(lastUpdated)}
               </span>
             )}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportCsv} disabled={loading || !hasData}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
-            aria-label="Export Search Console metrics to CSV">
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent hover:shadow-md disabled:pointer-events-none disabled:opacity-50 active:translate-y-0">
             <Download className="h-4 w-4" />
             Export CSV
           </button>
           <button onClick={load} disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 disabled:pointer-events-none disabled:opacity-60 active:translate-y-0"
             aria-label="Refresh Search Console metrics">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             Refresh metrics
           </button>
         </div>
       </div>
 
       {loading && (
-        <div className="p-6 bg-card border border-border rounded-xl flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span>Loading Search Console metrics…</span>
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} delay={i * 80} />
+            ))}
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-4 h-5 w-32 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+            <div className="h-56 w-full rounded-xl bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <div className="mb-4 h-5 w-28 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} delay={i * 60} />)}
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <div className="mb-4 h-5 w-28 rounded-md bg-muted animate-shimmer bg-[length:200%_100%]" style={{ backgroundImage: 'linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--card)) 50%, hsl(var(--muted)) 100%)' }} />
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} delay={i * 60 + 80} />)}
+            </div>
+          </div>
         </div>
       )}
 
@@ -250,30 +301,41 @@ export function SearchConsoleMetrics() {
       )}
 
       {error && (errorKind === 'forbidden' || errorKind === 'unknown' || errorKind === 'network') && (
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-start gap-3 text-sm">
-          <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium text-destructive">Could not load Search Console data</p>
-            <p className="text-xs text-muted-foreground mt-1 break-all">{error}</p>
-            <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-              <li>Confirm the connected Google account has access to <span className="font-mono">{SITE_URL}</span>.</li>
-              <li>Check that the property exists in Search Console and is verified.</li>
-              <li>Try again in a minute — the API occasionally rate-limits requests.</li>
-            </ul>
-            <button onClick={load} className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
-              <RefreshCw className="h-3 w-3" /> Retry
-            </button>
+        <div className="relative overflow-hidden rounded-2xl border border-destructive/30 bg-destructive/10 p-5 animate-fade-up" style={{ animationDelay: '80ms' }}>
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-display font-semibold text-destructive">Could not load Search Console data</p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">{error}</p>
+              <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-muted-foreground" />Confirm the connected Google account has access to <span className="font-mono">{SITE_URL}</span>.</li>
+                <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-muted-foreground" />Check that the property exists in Search Console and is verified.</li>
+                <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-muted-foreground" />Try again in a minute — the API occasionally rate-limits requests.</li>
+              </ul>
+              <button onClick={load} className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-destructive/15 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20">
+                <RefreshCw className="h-3.5 w-3.5" /> Retry
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {stats.map(s => (
-            <div key={s.label} className="p-4 bg-card border border-border rounded-xl">
-              <div className={`inline-flex p-2 rounded-lg mb-2 ${s.color}`}><s.icon className="h-4 w-4" /></div>
-              <p className="text-xl font-bold text-foreground">{s.value}</p>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">{s.label}</p>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {stats.map((s, i) => (
+            <div
+              key={s.label}
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg animate-fade-up"
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <div className={cn('absolute inset-x-0 top-0 h-1 bg-gradient-to-r opacity-70 transition-opacity group-hover:opacity-100', s.gradient)} />
+              <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shadow-sm transition-transform duration-300 group-hover:scale-110', s.gradient)}>
+                <s.icon className={cn('h-5 w-5', s.iconColor)} />
+              </div>
+              <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">{s.value}</p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
             </div>
           ))}
         </div>
@@ -294,64 +356,107 @@ export function SearchConsoleMetrics() {
       )}
 
       {!loading && chartData.length > 0 && (
-        <div className="p-4 bg-card border border-border rounded-xl">
-          <p className="text-sm font-semibold text-foreground mb-3">Clicks & Impressions</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={v => v.slice(5)} stroke="hsl(var(--muted-foreground))" />
-              <YAxis yAxisId="l" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
-              <Line yAxisId="l" type="monotone" dataKey="clicks" stroke="hsl(160,70%,37%)" strokeWidth={2} dot={false} />
-              <Line yAxisId="r" type="monotone" dataKey="impressions" stroke="hsl(217,91%,60%)" strokeWidth={2} dot={false} />
-            </LineChart>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm animate-fade-up" style={{ animationDelay: '320ms' }}>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="font-display text-base font-semibold text-foreground">Clicks & Impressions</p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" /> Clicks</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" /> Impressions</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+              <defs>
+                <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+              <YAxis yAxisId="l" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+              <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12, boxShadow: '0 10px 30px -10px rgba(0,0,0,0.15)' }}
+                itemStyle={{ fontSize: 12 }}
+              />
+              <Area yAxisId="l" type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2.5} fillOpacity={1} fill="url(#colorClicks)" />
+              <Area yAxisId="r" type="monotone" dataKey="impressions" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorImpressions)" />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="p-4 bg-card border border-border rounded-xl">
-            <p className="text-sm font-semibold text-foreground mb-3">Top Queries</p>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm animate-fade-up" style={{ animationDelay: '400ms' }}>
+            <p className="mb-4 font-display text-base font-semibold text-foreground">Top Queries</p>
             {byQuery.length === 0 ? (
-              <div className="text-xs text-muted-foreground flex items-start gap-2">
-                <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+                <Circle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>No queries yet. Once users find your site through Google, top search terms will appear here.</span>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {byQuery.slice(0, 8).map((r, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 text-sm py-1">
-                    <span className="text-foreground truncate flex-1">{r.keys[0]}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-                      {r.clicks} clicks · pos {r.position.toFixed(1)}
-                    </span>
+                  <div
+                    key={i}
+                    className="group rounded-xl px-3 py-2.5 transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex-1 truncate text-sm font-medium text-foreground">{r.keys[0]}</span>
+                      <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                        {r.clicks} clicks
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+                        style={{ width: `${Math.max(4, (r.clicks / maxClicks) * 100)}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="p-4 bg-card border border-border rounded-xl">
-            <p className="text-sm font-semibold text-foreground mb-3">Top Pages</p>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm animate-fade-up" style={{ animationDelay: '480ms' }}>
+            <p className="mb-4 font-display text-base font-semibold text-foreground">Top Pages</p>
             {byPage.length === 0 ? (
-              <div className="text-xs text-muted-foreground flex items-start gap-2">
-                <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+                <Circle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>No page impressions yet. Submit your sitemap and request indexing to jump-start discovery.</span>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {byPage.slice(0, 8).map((r, i) => (
-                  <a key={i} href={r.keys[0]} target="_blank" rel="noreferrer"
-                    className="flex items-center justify-between gap-3 text-sm py-1 hover:text-primary transition-colors">
-                    <span className="truncate flex-1 flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      {r.keys[0].replace(SITE_URL, '/') || '/'}
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-                      {r.clicks} clicks
-                    </span>
+                  <a
+                    key={i}
+                    href={r.keys[0]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group block rounded-xl px-3 py-2.5 transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex flex-1 items-center gap-2 truncate text-sm font-medium text-foreground">
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                        {r.keys[0].replace(SITE_URL, '/') || '/'}
+                      </span>
+                      <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                        {r.clicks} clicks
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-blue-500 transition-all duration-700 ease-out"
+                        style={{ width: `${Math.max(4, (r.clicks / maxClicks) * 100)}%` }}
+                      />
+                    </div>
                   </a>
                 ))}
               </div>

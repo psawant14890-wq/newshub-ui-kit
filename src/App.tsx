@@ -77,6 +77,7 @@ function AppContent() {
   if (route === '/ask') return <AskPage />;
   if (route === '/setup-admin') return <ProtectedRoute><SetupAdminPage /></ProtectedRoute>;
   if (route === '/digest') return <DigestPage />;
+  if (route === '/gsc-preview') return <GSCPreviewPage />;
   return <NotFoundPage />;
 }
 
