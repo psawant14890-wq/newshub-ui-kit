@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -93,7 +93,7 @@ export function SearchConsoleMetrics() {
   const [byPage, setByPage] = useState<Row[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     setErrorKind(null);
@@ -117,9 +117,13 @@ export function SearchConsoleMetrics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const interval = setInterval(() => load(), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   const totals = byDate.reduce(
     (acc, r) => ({
@@ -166,9 +170,10 @@ export function SearchConsoleMetrics() {
           </p>
         </div>
         <button onClick={load} disabled={loading}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
-          aria-label="Refresh Search Console data">
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+          aria-label="Refresh Search Console metrics">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh metrics
         </button>
       </div>
 
