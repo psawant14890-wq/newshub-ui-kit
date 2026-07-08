@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2 } from 'lucide-react';
+import { Search, MousePointerClick, Eye, TrendingUp, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Circle, Clock, Loader2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -153,6 +153,37 @@ export function SearchConsoleMetrics() {
   const hasData = byDate.length > 0 || byQuery.length > 0 || byPage.length > 0;
   const showEmptyGuidance = !loading && !error && !hasData;
 
+  const exportCsv = useCallback(() => {
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const header = ['Query / Page', 'Clicks', 'Impressions', 'CTR', 'Position'];
+    const rows: string[] = [header.join(',')];
+
+    if (byQuery.length > 0) {
+      rows.push('Top Queries');
+      byQuery.forEach(r => {
+        rows.push([escape(r.keys[0] || ''), r.clicks, r.impressions, `${(r.ctr * 100).toFixed(2)}%`, r.position.toFixed(1)].join(','));
+      });
+    }
+
+    if (byPage.length > 0) {
+      if (byQuery.length > 0) rows.push('');
+      rows.push('Top Pages');
+      byPage.forEach(r => {
+        rows.push([escape(r.keys[0] || ''), r.clicks, r.impressions, `${(r.ctr * 100).toFixed(2)}%`, r.position.toFixed(1)].join(','));
+      });
+    }
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `search-console-metrics-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [byQuery, byPage]);
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -169,12 +200,20 @@ export function SearchConsoleMetrics() {
             )}
           </p>
         </div>
-        <button onClick={load} disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
-          aria-label="Refresh Search Console metrics">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh metrics
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCsv} disabled={loading || !hasData}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+            aria-label="Export Search Console metrics to CSV">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button onClick={load} disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+            aria-label="Refresh Search Console metrics">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh metrics
+          </button>
+        </div>
       </div>
 
       {loading && (
