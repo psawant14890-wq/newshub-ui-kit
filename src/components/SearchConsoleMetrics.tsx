@@ -200,12 +200,20 @@ export function SearchConsoleMetrics() {
             )}
           </p>
         </div>
-        <button onClick={load} disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
-          aria-label="Refresh Search Console metrics">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh metrics
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCsv} disabled={loading || !hasData}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+            aria-label="Export Search Console metrics to CSV">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button onClick={load} disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-50"
+            aria-label="Refresh Search Console metrics">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh metrics
+          </button>
+        </div>
       </div>
 
       {loading && (
