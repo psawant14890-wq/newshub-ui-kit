@@ -93,7 +93,7 @@ export function SearchConsoleMetrics() {
   const [byPage, setByPage] = useState<Row[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     setErrorKind(null);
@@ -117,9 +117,13 @@ export function SearchConsoleMetrics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const interval = setInterval(() => load(), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   const totals = byDate.reduce(
     (acc, r) => ({
