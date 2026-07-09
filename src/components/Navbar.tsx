@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper, Shield, Trophy, FileEdit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useRoles } from '../hooks/useRoles';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
 import toast from 'react-hot-toast';
