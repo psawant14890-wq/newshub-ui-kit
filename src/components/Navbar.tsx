@@ -157,12 +157,14 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Bookmark className="h-4 w-4" /> Reading List
                       </button>
-                      <button
-                        onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
-                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
-                      >
-                        <FileEdit className="h-4 w-4" /> Editor Dashboard
-                      </button>
+                      {!rolesLoading && isWriter && (
+                        <button
+                          onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
+                          className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                        >
+                          <FileEdit className="h-4 w-4" /> Editor Dashboard
+                        </button>
+                      )}
                       <button
                         onClick={() => { navigate('/leaderboard'); setUserMenuOpen(false); }}
                         className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
@@ -175,7 +177,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Settings className="h-4 w-4" /> Settings
                       </button>
-                      {user?.user_metadata?.role === 'admin' && (
+                      {!rolesLoading && isAdmin && (
                         <button
                           onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
                           className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
