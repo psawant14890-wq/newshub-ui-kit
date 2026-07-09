@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Menu, Search, X, Sun, Moon, User, LogOut, Bookmark, Settings, Newspaper, Shield, Trophy, FileEdit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useRoles } from '../hooks/useRoles';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
 import toast from 'react-hot-toast';
@@ -19,6 +20,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isAdmin, isWriter, loading: rolesLoading } = useRoles();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -155,12 +157,14 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Bookmark className="h-4 w-4" /> Reading List
                       </button>
-                      <button
-                        onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
-                        className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
-                      >
-                        <FileEdit className="h-4 w-4" /> Editor Dashboard
-                      </button>
+                      {!rolesLoading && isWriter && (
+                        <button
+                          onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
+                          className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
+                        >
+                          <FileEdit className="h-4 w-4" /> Editor Dashboard
+                        </button>
+                      )}
                       <button
                         onClick={() => { navigate('/leaderboard'); setUserMenuOpen(false); }}
                         className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
@@ -173,7 +177,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Settings className="h-4 w-4" /> Settings
                       </button>
-                      {user?.user_metadata?.role === 'admin' && (
+                      {!rolesLoading && isAdmin && (
                         <button
                           onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
                           className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
