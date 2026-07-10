@@ -20,7 +20,8 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { isAdmin, isWriter, loading: rolesLoading } = useRoles();
+  const { isAdmin, roles, loading: rolesLoading } = useRoles();
+  const canEdit = roles.includes('writer') || roles.includes('editor');
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
