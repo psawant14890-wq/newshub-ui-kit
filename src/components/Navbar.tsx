@@ -158,7 +158,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Bookmark className="h-4 w-4" /> Reading List
                       </button>
-                      {!rolesLoading && isWriter && (
+                      {!rolesLoading && canEdit && (
                         <button
                           onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
                           className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"
