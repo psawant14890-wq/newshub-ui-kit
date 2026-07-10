@@ -20,7 +20,8 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { isAdmin, isWriter, loading: rolesLoading } = useRoles();
+  const { isAdmin, roles, loading: rolesLoading } = useRoles();
+  const canEdit = roles.includes('writer') || roles.includes('editor');
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -157,7 +158,7 @@ export function Navbar({ categories, currentCategory }: NavbarProps) {
                       >
                         <Bookmark className="h-4 w-4" /> Reading List
                       </button>
-                      {!rolesLoading && isWriter && (
+                      {!rolesLoading && canEdit && (
                         <button
                           onClick={() => { navigate('/editor'); setUserMenuOpen(false); }}
                           className="w-full px-3 py-2 text-sm text-foreground hover:bg-accent flex items-center gap-2 transition-colors duration-200"

@@ -59,10 +59,10 @@ function AppContent() {
   if (route === '/auth/callback') return <AuthCallback />;
   if (route === '/search') return <SearchPage query={searchQuery} />;
   if (route === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
-  if (route === '/admin') return <ProtectedRoute requiredRole={['admin', 'editor', 'writer']}><AdminPage /></ProtectedRoute>;
+  if (route === '/admin') return <ProtectedRoute requiredRole="admin"><AdminPage /></ProtectedRoute>;
   if (route === '/admin/analytics') return <ProtectedRoute requiredRole="admin"><AnalyticsDashboard /></ProtectedRoute>;
-  if (route === '/writer') return <ProtectedRoute requiredRole={['admin', 'editor', 'writer']}><WriterDashboard /></ProtectedRoute>;
-  if (route === '/editor') return <ProtectedRoute requiredRole={['admin', 'editor', 'writer']}><EditorDashboard /></ProtectedRoute>;
+  if (route === '/writer') return <ProtectedRoute requiredRole={['writer', 'editor']}><WriterDashboard /></ProtectedRoute>;
+  if (route === '/editor' || route === '/editor-dashboard') return <ProtectedRoute requiredRole={['writer', 'editor']}><EditorDashboard /></ProtectedRoute>;
   if (route === '/reading-list' || route === '/saved') return <ProtectedRoute><ReadingListPage /></ProtectedRoute>;
   if (route === '/leaderboard') return <LeaderboardPage />;
   if (route === '/become-writer') return <ProtectedRoute><WriterApplication /></ProtectedRoute>;
